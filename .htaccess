@@ -1,0 +1,41 @@
+# IPI - Innovation Performance Index
+# Reescritura de URLs
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Redireccionar al directorio public si existe
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Redirigir todo al index.php
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Prevenir el listado de directorios
+Options -Indexes
+
+# Configuración de errores personalizados
+ErrorDocument 404 /index.php?url=error/404
+ErrorDocument 403 /index.php?url=error/403
+
+# Configuración de PHP
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+# Proteger archivos sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "(composer\.json|composer\.lock|\.gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
