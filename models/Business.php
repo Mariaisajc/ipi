@@ -189,6 +189,51 @@ class Business extends Model {
     }
     
     /**
+     * Filtrar empresas con múltiples criterios
+     */
+    public function filter($filters) {
+        $sql = "SELECT b.*, 
+                COUNT(DISTINCT ba.id) as areas_count
+                FROM {$this->table} b
+                LEFT JOIN business_areas ba ON b.id = ba.business_id
+                WHERE 1=1";
+        
+        $params = [];
+        
+        // Búsqueda por texto
+        if (!empty($filters['search'])) {
+            $sql .= " AND (b.name LIKE ? OR b.razon_social LIKE ? OR b.nit LIKE ? OR b.sector LIKE ?)";
+            $searchTerm = "%{$filters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // Filtro por sector
+        if (!empty($filters['sector'])) {
+            $sql .= " AND b.sector = ?";
+            $params[] = $filters['sector'];
+        }
+        
+        // Filtro por país
+        if (!empty($filters['country'])) {
+            $sql .= " AND b.country = ?";
+            $params[] = $filters['country'];
+        }
+        
+        // Filtro por estado
+        if (!empty($filters['status'])) {
+            $sql .= " AND b.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        $sql .= " GROUP BY b.id ORDER BY b.created_at DESC";
+        
+        return $this->query($sql, $params);
+    }
+    
+    /**
      * Contar total de empresas
      */
     public function countAll() {

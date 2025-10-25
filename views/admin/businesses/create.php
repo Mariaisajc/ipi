@@ -316,7 +316,7 @@ $pageTitle = $title ?? 'Nueva Empresa';
             <!-- Acciones -->
             <div class="card">
                 <div class="card-body">
-                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                    <button type="submit" class="btn btn-success w-100 mb-2" style="background-color: #5a6c57; border-color: #5a6c57;">
                         <i class="bi bi-check-circle me-1"></i>
                         Guardar Empresa
                     </button>

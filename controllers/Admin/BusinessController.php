@@ -35,11 +35,20 @@ class BusinessController extends Controller {
         $perPage = 10;
         $offset = ($page - 1) * $perPage;
         
-        // Búsqueda
+        // Obtener filtros
         $search = $this->input('search');
-        if ($search) {
-            $businesses = $this->businessModel->search($search);
+        $status = $this->input('status');
+        
+        // Aplicar filtros
+        $filters = [];
+        if ($search) $filters['search'] = $search;
+        if ($status) $filters['status'] = $status;
+        
+        if (!empty($filters)) {
+            $businesses = $this->businessModel->filter($filters);
             $total = count($businesses);
+            // Aplicar paginación manual
+            $businesses = array_slice($businesses, $offset, $perPage);
         } else {
             $businesses = $this->businessModel->getAll($perPage, $offset);
             $total = $this->businessModel->countAll();
@@ -53,7 +62,9 @@ class BusinessController extends Controller {
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'total' => $total,
-            'search' => $search
+            'search' => $search,
+            'status' => $status,
+            'businessAreaModel' => $this->businessAreaModel
         ], 'admin');
     }
     
@@ -172,6 +183,35 @@ class BusinessController extends Controller {
     }
     
     /**
+     * Ver detalles de una empresa (solo lectura)
+     */
+    public function show() {
+        $id = $this->input('id');
+        
+        if (!$id) {
+            $this->redirect('admin/businesses');
+            return;
+        }
+        
+        $business = $this->businessModel->getById($id);
+        
+        if (!$business) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Empresa no encontrada'];
+            $this->redirect('admin/businesses');
+            return;
+        }
+        
+        // Obtener áreas de negocio
+        $areas = $this->businessAreaModel->getByBusiness($id);
+        
+        $this->view('admin/businesses/view', [
+            'title' => 'Detalles de Empresa',
+            'business' => $business,
+            'areas' => $areas
+        ], 'admin');
+    }
+    
+    /**
      * Mostrar formulario de edición
      */
     public function edit() {
@@ -278,36 +318,80 @@ class BusinessController extends Controller {
         // Actualizar empresa
         $this->businessModel->update($id, $data);
         
-        // Actualizar áreas de negocio
-        $this->businessAreaModel->deleteByBusiness($id);
-        
+        // Actualizar áreas de negocio (preservando created_at)
         $areas = $this->input('areas');
+        $existingAreas = $this->businessAreaModel->getByBusiness($id);
+        
+        // Crear un mapa de áreas existentes por nombre
+        $existingAreasMap = [];
+        foreach ($existingAreas as $existingArea) {
+            $existingAreasMap[strtolower(trim($existingArea['name']))] = $existingArea;
+        }
+        
+        // Procesar áreas del formulario
+        $processedAreaNames = [];
+        
         if (!empty($areas) && is_array($areas)) {
             foreach ($areas as $area) {
                 // Validar que sea un array con 'name'
                 if (is_array($area) && !empty($area['name'])) {
                     $areaName = trim($area['name']);
+                    $areaNameLower = strtolower($areaName);
+                    $areaDescription = !empty($area['description']) ? trim($area['description']) : null;
+                    
                     if (!empty($areaName)) {
-                        $this->businessAreaModel->create([
-                            'business_id' => $id,
-                            'name' => $areaName,
-                            'description' => !empty($area['description']) ? trim($area['description']) : null,
-                            'created_by' => $this->auth->id() ?? 1
-                        ]);
+                        // Si el área ya existe, actualizarla
+                        if (isset($existingAreasMap[$areaNameLower])) {
+                            $existingAreaId = $existingAreasMap[$areaNameLower]['id'];
+                            $this->businessAreaModel->update($existingAreaId, [
+                                'name' => $areaName,
+                                'description' => $areaDescription
+                            ]);
+                        } else {
+                            // Si es nueva, crearla
+                            $this->businessAreaModel->create([
+                                'business_id' => $id,
+                                'name' => $areaName,
+                                'description' => $areaDescription,
+                                'created_by' => $this->auth->id() ?? 1
+                            ]);
+                        }
+                        $processedAreaNames[] = $areaNameLower;
                     }
                 }
                 // Soporte para formato antiguo (solo string)
                 elseif (is_string($area)) {
                     $areaName = trim($area);
+                    $areaNameLower = strtolower($areaName);
+                    
                     if (!empty($areaName)) {
-                        $this->businessAreaModel->create([
-                            'business_id' => $id,
-                            'name' => $areaName,
-                            'description' => null,
-                            'created_by' => $this->auth->id() ?? 1
-                        ]);
+                        // Si el área ya existe, actualizarla
+                        if (isset($existingAreasMap[$areaNameLower])) {
+                            $existingAreaId = $existingAreasMap[$areaNameLower]['id'];
+                            $this->businessAreaModel->update($existingAreaId, [
+                                'name' => $areaName,
+                                'description' => null
+                            ]);
+                        } else {
+                            // Si es nueva, crearla
+                            $this->businessAreaModel->create([
+                                'business_id' => $id,
+                                'name' => $areaName,
+                                'description' => null,
+                                'created_by' => $this->auth->id() ?? 1
+                            ]);
+                        }
+                        $processedAreaNames[] = $areaNameLower;
                     }
                 }
+            }
+        }
+        
+        // Eliminar áreas que ya no están en el formulario
+        foreach ($existingAreas as $existingArea) {
+            $existingNameLower = strtolower(trim($existingArea['name']));
+            if (!in_array($existingNameLower, $processedAreaNames)) {
+                $this->businessAreaModel->delete($existingArea['id']);
             }
         }
         

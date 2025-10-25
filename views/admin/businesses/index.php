@@ -11,7 +11,7 @@ $pageTitle = $title ?? 'Empresas';
         <h1 class="h3 mb-0"><?= $pageTitle ?></h1>
         <p class="text-muted mb-0">Gestiona las empresas del sistema</p>
     </div>
-    <a href="<?= url('admin/businesses/create') ?>" class="btn btn-primary">
+    <a href="<?= url('admin/businesses/create') ?>" class="btn btn-success" style="background-color: #5a6c57; border-color: #5a6c57;">
         <i class="bi bi-plus-circle me-1"></i>
         Nueva Empresa
     </a>
@@ -32,20 +32,59 @@ if ($flashData):
 <!-- Filtros -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" action="<?= url('admin/businesses') ?>" class="row g-3">
-            <div class="col-md-10">
-                <input type="text" name="search" class="form-control" 
-                       placeholder="Buscar por nombre, email o ciudad..." 
-                       value="<?= e($search ?? '') ?>">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
+        <form method="GET" action="<?= url('admin/businesses') ?>" id="filterForm">
+            <div class="row g-3">
+                <!-- Buscador -->
+                <div class="col-md-9">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" 
+                               name="search" 
+                               class="form-control border-start-0" 
+                               placeholder="Buscar por nombre, NIT o descripción..." 
+                               value="<?= e($search ?? '') ?>"
+                               id="searchInput">
+                    </div>
+                </div>
+                
+                <!-- Filtro por Estado -->
+                <div class="col-md-3">
+                    <select name="status" class="form-select" id="statusFilter">
+                        <option value="">Todos los estados</option>
+                        <option value="borrador" <?= ($status ?? '') === 'borrador' ? 'selected' : '' ?>>Borrador</option>
+                        <option value="active" <?= ($status ?? '') === 'active' ? 'selected' : '' ?>>Activa</option>
+                        <option value="inactive" <?= ($status ?? '') === 'inactive' ? 'selected' : '' ?>>Inactiva</option>
+                    </select>
+                </div>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+// Auto-submit cuando cambian los filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filterForm');
+    const statusSelect = document.getElementById('statusFilter');
+    const searchInput = document.getElementById('searchInput');
+    
+    // Submit al cambiar selector de estado
+    statusSelect.addEventListener('change', function() {
+        form.submit();
+    });
+    
+    // Submit al escribir en el buscador (con delay)
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            form.submit();
+        }, 500); // Espera 500ms después de dejar de escribir
+    });
+});
+</script>
 
 <!-- Tabla de Empresas -->
 <div class="card">
@@ -53,9 +92,9 @@ if ($flashData):
         <?php if (empty($businesses)): ?>
             <div class="text-center py-5">
                 <i class="bi bi-building" style="font-size: 3rem; color: #ccc;"></i>
-                <p class="text-muted mt-3">No hay empresas registradas</p>
-                <a href="<?= url('admin/businesses/create') ?>" class="btn btn-primary">
-                    Crear primera empresa
+                <p class="text-muted mt-3">Empresa no encontrada</p>
+                <a href="<?= url('admin/businesses/create') ?>" class="btn btn-success" style="background-color: #5a6c57; border-color: #5a6c57;">
+                    Crear empresa
                 </a>
             </div>
         <?php else: ?>
@@ -64,8 +103,8 @@ if ($flashData):
                     <thead>
                         <tr>
                             <th>Empresa</th>
-                            <th>Contacto</th>
-                            <th>Ubicación</th>
+                            <th>Fecha de Creación</th>
+                            <th>Usuarios</th>
                             <th>Áreas</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -76,39 +115,62 @@ if ($flashData):
                         <tr>
                             <td>
                                 <div class="fw-bold"><?= e($business['name']) ?></div>
-                                <?php if (!empty($business['razon_social'])): ?>
-                                    <small class="text-muted"><?= e($business['razon_social']) ?></small>
+                                <?php if (!empty($business['sector'])): ?>
+                                    <small class="text-muted">
+                                        <i class="bi bi-tag me-1"></i><?= e($business['sector']) ?>
+                                    </small>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if (!empty($business['administrador_nombre'])): ?>
-                                    <div><?= e($business['administrador_nombre']) ?></div>
-                                <?php endif; ?>
-                                <?php if (!empty($business['administrador_email'])): ?>
-                                    <small class="text-muted"><?= e($business['administrador_email']) ?></small>
-                                <?php endif; ?>
+                                <div><?= date('d/m/Y', strtotime($business['created_at'])) ?></div>
+                                <small class="text-muted"><?= date('H:i', strtotime($business['created_at'])) ?></small>
                             </td>
                             <td>
-                                <?php if (!empty($business['country'])): ?>
-                                    <?= e($business['country']) ?>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-secondary rounded-pill">
+                                        <i class="bi bi-people me-1"></i>
+                                        <span class="fw-bold">0</span>
+                                    </span>
+                                    <small class="text-muted ms-2">Pendiente</small>
+                                </div>
+                            </td>
+                            <td>
+                                <?php 
+                                $areas = $businessAreaModel->getByBusiness($business['id']);
+                                $areaCount = count($areas);
+                                ?>
+                                <?php if ($areaCount > 0): ?>
+                                    <span class="badge bg-info text-dark">
+                                        <i class="bi bi-diagram-3 me-1"></i>
+                                        <?= $areaCount ?> área<?= $areaCount > 1 ? 's' : '' ?>
+                                    </span>
                                 <?php else: ?>
-                                    <span class="text-muted">-</span>
+                                    <small class="text-muted">Sin áreas</small>
                                 <?php endif; ?>
-                            </td>
-                            <td>
-                                <span class="badge bg-info"><?= $business['areas_count'] ?> áreas</span>
                             </td>
                             <td>
                                 <?php if ($business['status'] === 'active'): ?>
-                                    <span class="badge bg-success">Activa</span>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Activa
+                                    </span>
                                 <?php elseif ($business['status'] === 'borrador'): ?>
-                                    <span class="badge bg-warning text-dark">Borrador</span>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-pencil-square me-1"></i>Borrador
+                                    </span>
                                 <?php else: ?>
-                                    <span class="badge bg-secondary">Inactiva</span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>Inactiva
+                                    </span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
+                                    <a href="<?= url('admin/businesses/show?id=' . $business['id']) ?>" 
+                                       class="btn btn-sm btn-outline-success" 
+                                       style="--bs-btn-color: #5a6c57; --bs-btn-border-color: #5a6c57; --bs-btn-hover-bg: #5a6c57; --bs-btn-hover-border-color: #5a6c57; --bs-btn-active-bg: #5a6c57; --bs-btn-active-border-color: #5a6c57;"
+                                       title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                     <a href="<?= url('admin/businesses/edit?id=' . $business['id']) ?>" 
                                        class="btn btn-sm btn-outline-primary" 
                                        title="Editar">

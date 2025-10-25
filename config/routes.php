@@ -34,10 +34,10 @@ return [
     'admin/businesses' => 'Admin\BusinessController@index',
     'admin/businesses/create' => 'Admin\BusinessController@create',
     'admin/businesses/store' => 'Admin\BusinessController@store',
+    'admin/businesses/show' => 'Admin\BusinessController@show',
     'admin/businesses/edit' => 'Admin\BusinessController@edit',
     'admin/businesses/update' => 'Admin\BusinessController@update',
     'admin/businesses/delete' => 'Admin\BusinessController@delete',
-    'admin/businesses/view' => 'Admin\BusinessController@view',
     
     // Gestión de Áreas de Negocio
     'admin/business-areas/{business_id}' => 'Admin\BusinessController@areas',

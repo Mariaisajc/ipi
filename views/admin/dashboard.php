@@ -189,7 +189,7 @@
                 <?php else: ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($recentBusinesses as $business): ?>
-                            <a href="<?= url('admin/businesses/view/' . $business['id']) ?>" 
+                            <a href="<?= url('admin/businesses/show?id=' . $business['id']) ?>" 
                                class="list-group-item list-group-item-action border-0 px-0">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0 me-3">
