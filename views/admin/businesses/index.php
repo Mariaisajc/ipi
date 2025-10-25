@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php if (empty($businesses)): ?>
             <div class="text-center py-5">
                 <i class="bi bi-building" style="font-size: 3rem; color: #ccc;"></i>
-                <p class="text-muted mt-3">Empresa no encontrada</p>
+                <p class="text-muted mt-3">No hay empresas registradas</p>
                 <a href="<?= url('admin/businesses/create') ?>" class="btn btn-success" style="background-color: #5a6c57; border-color: #5a6c57;">
                     Crear empresa
                 </a>
@@ -205,8 +205,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <nav class="mt-4">
                 <ul class="pagination justify-content-center">
                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <?php 
+                        $params = [];
+                        if ($search) $params[] = 'search=' . urlencode($search);
+                        if ($status) $params[] = 'status=' . urlencode($status);
+                        $params[] = 'page=' . $i;
+                        $queryString = implode('&', $params);
+                        ?>
                         <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
-                            <a class="page-link" href="<?= url('admin/businesses?page=' . $i . ($search ? '&search=' . urlencode($search) : '')) ?>">
+                            <a class="page-link" href="<?= url('admin/businesses?' . $queryString) ?>">
                                 <?= $i ?>
                             </a>
                         </li>
@@ -274,3 +281,28 @@ function deleteBusiness(id) {
     });
 }
 </script>
+
+<style>
+/* Paginación con colores corporativos */
+.pagination .page-link {
+    color: #5a6c57;
+    border-color: #dee2e6;
+}
+
+.pagination .page-link:hover {
+    color: #4a5d4a;
+    background-color: #e8f5e9;
+    border-color: #5a6c57;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #5a6c57;
+    border-color: #5a6c57;
+    color: white;
+}
+
+.pagination .page-item.active .page-link:hover {
+    background-color: #4a5d4a;
+    border-color: #4a5d4a;
+}
+</style>
