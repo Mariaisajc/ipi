@@ -51,8 +51,8 @@ class Business extends Model {
                  total_empleados, area_name, area_empleados, empleados_invitados,
                  tiene_departamento_innovacion, nivel_departamento_innovacion,
                  idiomas_participantes, idioma_informe, start_date, end_date,
-                 administrador_nombre, administrador_email, status, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                 administrador_nombre, administrador_email, status, created_by, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
         
         $this->query($sql, [
             $data['name'],
@@ -74,7 +74,8 @@ class Business extends Model {
             $data['end_date'] ?? null,
             $data['administrador_nombre'] ?? null,
             $data['administrador_email'] ?? null,
-            $data['status'] ?? 'active'
+            $data['status'] ?? 'active',
+            $data['created_by'] ?? null
         ]);
         
         return $this->db->lastInsertId();

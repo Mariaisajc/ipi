@@ -94,6 +94,15 @@ function auth_user() {
 }
 
 /**
+ * Obtener ID del usuario autenticado actual
+ * 
+ * @return int|null
+ */
+function current_user_id() {
+    return $_SESSION['user']['id'] ?? null;
+}
+
+/**
  * Verificar si el usuario tiene un rol específico
  * 
  * @param string $role

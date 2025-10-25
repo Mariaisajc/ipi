@@ -103,7 +103,8 @@ class BusinessController extends Controller {
             'end_date' => $this->input('end_date'),
             'administrador_nombre' => trim($this->input('administrador_nombre')),
             'administrador_email' => trim($this->input('administrador_email')),
-            'status' => $this->input('status') ?? 'active'
+            'status' => $this->input('status') ?? 'active',
+            'created_by' => $this->auth->id() ?? 1
         ];
         
         // Validar campos requeridos
