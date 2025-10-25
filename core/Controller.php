@@ -259,12 +259,21 @@ class Controller {
      */
     protected function log($message, $level = 'info') {
         if ($this->config['logging']['enabled']) {
-            $logFile = $this->config['logging']['path'] . date('Y-m-d') . '.log';
+            $logDir = $this->config['logging']['path'];
+            
+            // Crear directorio si no existe
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+            
+            $logFile = $logDir . date('Y-m-d') . '.log';
             $timestamp = date('Y-m-d H:i:s');
             $user = $this->user() ? $this->user()['login'] : 'guest';
             
             $logMessage = "[{$timestamp}] [{$level}] [{$user}] {$message}" . PHP_EOL;
-            file_put_contents($logFile, $logMessage, FILE_APPEND);
+            
+            // Intentar escribir el log, si falla no detener la ejecución
+            @file_put_contents($logFile, $logMessage, FILE_APPEND);
         }
     }
 }

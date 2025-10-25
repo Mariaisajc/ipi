@@ -9,10 +9,7 @@
 // Iniciar el buffer de salida
 ob_start();
 
-// Iniciar la sesión
-session_start();
-
-// Definir constantes de la aplicación
+// Definir constantes de la aplicación PRIMERO
 define('ROOT_PATH', __DIR__);
 define('APP_PATH', ROOT_PATH . '/app');
 define('CONFIG_PATH', ROOT_PATH . '/config');
@@ -41,10 +38,13 @@ $routes = require CONFIG_PATH . '/routes.php';
 // Configurar zona horaria
 date_default_timezone_set($appConfig['timezone']);
 
-// Configurar sesión
+// Configurar sesión ANTES de iniciarla
 ini_set('session.cookie_lifetime', $appConfig['session']['lifetime']);
 ini_set('session.cookie_httponly', $appConfig['session']['httponly']);
 ini_set('session.use_strict_mode', 1);
+
+// Iniciar la sesión
+session_start();
 
 // Reportar errores según el entorno
 if ($appConfig['env'] === 'development') {

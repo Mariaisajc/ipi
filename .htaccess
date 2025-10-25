@@ -4,12 +4,12 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Redireccionar al directorio public si existe
-    RewriteCond %{REQUEST_URI} !^/public/
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # Permitir acceso directo a archivos y directorios reales (assets, uploads, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
     
-    # Redirigir todo al index.php
+    # Redirigir todo lo demás al index.php
     RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 </IfModule>
 

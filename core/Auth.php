@@ -48,8 +48,8 @@ class Auth {
         require_once MODELS_PATH . '/User.php';
         $userModel = new User();
         
-        // Buscar usuario por login o email
-        $user = $userModel->findByLogin($login);
+        // Buscar usuario activo por login o email
+        $user = $userModel->findActiveByLogin($login);
         
         if (!$user) {
             return false;
@@ -57,11 +57,6 @@ class Auth {
         
         // Verificar contraseña
         if (!password_verify($password, $user['password'])) {
-            return false;
-        }
-        
-        // Verificar si el usuario está activo
-        if ($user['status'] !== 'active') {
             return false;
         }
         

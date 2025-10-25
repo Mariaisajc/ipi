@@ -37,8 +37,8 @@ class AuthController extends Controller {
         
         // Validar CSRF
         if (!$this->validateCSRF()) {
-            $this->setFlash('error', 'Token de seguridad inválido');
-            $this->redirect('auth/login');
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Token de seguridad inválido'];
+            $this->view('auth/login', [], null);
             return;
         }
         
@@ -49,9 +49,12 @@ class AuthController extends Controller {
         
         // Validar campos requeridos
         if (empty($login) || empty($password)) {
-            $this->setFlash('error', 'Por favor ingrese usuario y contraseña');
+            $flashMessage = ['type' => 'error', 'message' => 'Por favor ingrese usuario y contraseña'];
+            $_SESSION['flash'] = $flashMessage;
             save_old(['login' => $login]);
-            $this->redirect('auth/login');
+            
+            // Pasar el flash directamente a la vista también
+            $this->view('auth/login', ['flash' => $flashMessage], null);
             return;
         }
         
@@ -59,13 +62,27 @@ class AuthController extends Controller {
         $user = $this->auth->attempt($login, $password);
         
         if (!$user) {
-            $this->setFlash('error', 'Credenciales incorrectas o usuario inactivo');
+            // Verificar si el usuario existe pero está inactivo
+            $userModel = $this->model('User');
+            $existingUser = $userModel->findByLogin($login);
+            
+            $flashMessage = null;
+            if ($existingUser && $existingUser['status'] === 'inactive') {
+                $flashMessage = ['type' => 'error', 'message' => 'Tu cuenta ha sido desactivada. Contacta al administrador.'];
+            } else if ($existingUser) {
+                $flashMessage = ['type' => 'error', 'message' => 'Contraseña incorrecta. Por favor, verifica tus credenciales.'];
+            } else {
+                $flashMessage = ['type' => 'error', 'message' => 'Usuario no encontrado. Verifica tu nombre de usuario o email.'];
+            }
+            
+            $_SESSION['flash'] = $flashMessage;
             save_old(['login' => $login]);
             
             // Log del intento fallido
             $this->log("Intento de login fallido para: {$login}", 'warning');
             
-            $this->redirect('auth/login');
+            // Pasar el flash directamente a la vista también
+            $this->view('auth/login', ['flash' => $flashMessage], null);
             return;
         }
         

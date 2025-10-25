@@ -18,12 +18,35 @@ class User extends Model {
      */
     public function findByLogin($login) {
         $sql = "SELECT * FROM {$this->table} 
-                WHERE (login = :login OR email = :login) 
+                WHERE (login = :login OR email = :email) 
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'login' => $login,
+            'email' => $login
+        ]);
+        
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Buscar usuario activo por login o email
+     * 
+     * @param string $login
+     * @return array|false
+     */
+    public function findActiveByLogin($login) {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE (login = :login OR email = :email) 
                 AND status = 'active' 
                 LIMIT 1";
         
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['login' => $login]);
+        $stmt->execute([
+            'login' => $login,
+            'email' => $login
+        ]);
         
         return $stmt->fetch();
     }

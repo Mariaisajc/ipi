@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - IPI</title>
+    <title>Iniciar Sesión - IPI</title>
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- CSS Global -->
-    <link rel="stylesheet" href="<?= asset('css/global.css') ?>">
+    <!-- Flash Messages CSS -->
+    <link href="<?= url('assets/css/flash.css') ?>" rel="stylesheet">
     
     <style>
         * {
@@ -25,62 +28,74 @@
         
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #214247 0%, #457373 100%);
+            background: linear-gradient(135deg, #457373 0%, #214247 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .login-container {
-            max-width: 450px;
-            width: 100%;
             padding: 20px;
         }
         
-        .login-card {
-            background: white;
+        .login-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
         .login-header {
-            background: #214247;
-            padding: 40px 30px;
             text-align: center;
+            margin-bottom: 40px;
         }
         
-        .login-header h1 {
-            color: #e6dbcb;
-            font-size: 32px;
+        .logo-circle {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo-text {
+            font-size: 36px;
             font-weight: 700;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
+            color: #214247;
         }
         
-        .login-header p {
-            color: #b7c6c2;
-            font-size: 14px;
-            margin: 0;
+        .brand-title {
+            color: white;
+            font-size: 28px;
+            font-weight: 600;
+            margin: 15px 0 5px 0;
+            line-height: 1.2;
         }
         
-        .login-body {
-            padding: 40px 30px;
+        .login-form {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
         }
         
         .form-label {
             color: #214247;
             font-weight: 500;
             margin-bottom: 8px;
+            font-size: 14px;
         }
         
         .form-control {
-            border: 2px solid #b7c6c2;
+            border: 2px solid #e6dbcb;
             border-radius: 10px;
-            padding: 12px 15px;
-            font-size: 15px;
-            transition: all 0.3s;
+            padding: 12px 15px 12px 45px;
+            font-size: 14px;
+            transition: all 0.3s ease;
         }
         
         .form-control:focus {
@@ -88,16 +103,32 @@
             box-shadow: 0 0 0 0.2rem rgba(69, 115, 115, 0.15);
         }
         
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #457373;
+            z-index: 10;
+            font-size: 18px;
+        }
+        
         .btn-login {
             background: #214247;
             color: white;
             border: none;
-            padding: 14px;
             border-radius: 10px;
+            padding: 14px;
             font-weight: 600;
             font-size: 16px;
             width: 100%;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            margin-top: 10px;
         }
         
         .btn-login:hover {
@@ -106,158 +137,180 @@
             box-shadow: 0 5px 15px rgba(33, 66, 71, 0.3);
         }
         
-        .form-check-input:checked {
-            background-color: #457373;
-            border-color: #457373;
+        .help-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-left: 4px solid #0d6efd;
+            border-radius: 8px;
         }
         
-        .form-check-label {
+        .help-section p {
+            margin: 0;
+            font-size: 13px;
             color: #214247;
-            font-size: 14px;
         }
         
-        .alert {
-            border-radius: 10px;
-            border: none;
+        .help-section a {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 500;
         }
         
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
+        .help-section a:hover {
+            text-decoration: underline;
         }
         
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .logo-circle {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border-radius: 50%;
-            margin: 0 auto 20px;
+        .help-title {
+            font-weight: 600;
+            color: #0d6efd;
+            margin-bottom: 5px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            gap: 5px;
         }
         
-        .logo-circle span {
-            font-size: 36px;
-            font-weight: 700;
-            color: #214247;
-        }
-        
-        .footer-text {
+        .footer-link {
             text-align: center;
-            color: #e6dbcb;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e6dbcb;
+        }
+        
+        .footer-link a {
+            color: #457373;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-link a:hover {
+            color: #214247;
+            gap: 8px;
+        }
+        
+        .copyright {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 30px;
             font-size: 13px;
-            margin-top: 20px;
         }
         
-        .input-group-text {
-            border: 2px solid #b7c6c2;
-            border-right: none;
-            background: white;
-            border-radius: 10px 0 0 10px;
-        }
-        
-        .input-group .form-control {
-            border-left: none;
-            border-radius: 0 10px 10px 0;
-        }
-        
-        .input-group:focus-within .input-group-text {
-            border-color: #457373;
+        @media (max-width: 576px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .brand-title {
+                font-size: 24px;
+            }
+            
+            .login-form {
+                padding: 25px 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="logo-circle">
-                    <span>IPI</span>
+        <!-- Header -->
+        <div class="login-header">
+            <div class="logo-circle">
+                <span class="logo-text">IPI</span>
+            </div>
+            <h1 class="brand-title">
+                Innovation<br>Performance<br>Inndex
+            </h1>
+        </div>
+        
+        <!-- Formulario -->
+        <div class="login-form">
+            <!-- Mensaje -->
+            <?php 
+            $flashData = isset($flash) ? $flash : (isset($_SESSION['flash']) ? $_SESSION['flash'] : null);
+            ?>
+            <?php if ($flashData): ?>
+                <div id="message" class="message <?= $flashData['type'] ?>">
+                    <?= htmlspecialchars($flashData['message']) ?>
                 </div>
-                <h1>Innovation Performance</h1>
-                <p>Inndex</p>
+                <?php if (isset($_SESSION['flash'])) unset($_SESSION['flash']); ?>
+            <?php endif; ?>
+            
+            <form method="POST" action="<?= url('auth/do-login') ?>">
+                <?= csrf_field() ?>
+                
+                <!-- Usuario -->
+                <div class="mb-3">
+                    <label for="login" class="form-label">Usuario o Email</label>
+                    <div class="input-group">
+                        <i class="bi bi-person input-icon"></i>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="login" 
+                            name="login" 
+                            placeholder="Ingrese su usuario o email"
+                            value="<?= old('login') ?>"
+                            required
+                            autofocus>
+                    </div>
+                </div>
+                
+                <!-- Contraseña -->
+                <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Ingrese su contraseña"
+                            required>
+                    </div>
+                </div>
+                
+                <!-- Botón -->
+                <button type="submit" class="btn btn-login">
+                    Iniciar Sesión
+                </button>
+            </form>
+            
+            <!-- Ayuda -->
+            <div class="help-section">
+                <p class="help-title">
+                    <i class="bi bi-question-circle"></i>
+                    ¿Problemas para acceder?
+                </p>
+                <p>
+                    Comunícate con el administrador al correo 
+                    <a href="mailto:danieljimenez208573@gmail.com">danieljimenez208573@gmail.com</a>
+                </p>
             </div>
             
-            <div class="login-body">
-                <?php $flash = get_flash(); ?>
-                <?php if ($flash): ?>
-                    <div class="alert alert-<?= $flash['type'] === 'error' ? 'danger' : $flash['type'] ?> alert-dismissible fade show" role="alert">
-                        <?= e($flash['message']) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-                
-                <form method="POST" action="<?= url('auth/login') ?>">
-                    <?= csrf_field() ?>
-                    
-                    <div class="mb-3">
-                        <label for="login" class="form-label">Usuario o Email</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-                                </svg>
-                            </span>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="login" 
-                                   name="login" 
-                                   placeholder="Ingrese su usuario o email" 
-                                   value="<?= e(old('login')) ?>"
-                                   required 
-                                   autofocus>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-                                </svg>
-                            </span>
-                            <input type="password" 
-                                   class="form-control" 
-                                   id="password" 
-                                   name="password" 
-                                   placeholder="Ingrese su contraseña" 
-                                   required>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <div class="form-check">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   value="1" 
-                                   id="remember" 
-                                   name="remember">
-                            <label class="form-check-label" for="remember">
-                                Recordarme por 30 días
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-login">
-                        Iniciar Sesión
-                    </button>
-                </form>
+            <!-- Regresar -->
+            <div class="footer-link">
+                <a href="<?= url('') ?>">
+                    <i class="bi bi-arrow-left"></i>
+                    Regresar al inicio
+                </a>
             </div>
         </div>
         
-        <p class="footer-text">
+        <!-- Copyright -->
+        <div class="copyright">
             &copy; <?= date('Y') ?> IPI - Innovation Performance Inndex
-        </p>
+        </div>
     </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Flash Messages JS -->
+    <script src="<?= url('assets/js/flash.js') ?>"></script>
 </body>
 </html>

@@ -10,8 +10,10 @@ return [
     // ========================================
     // RUTAS PÚBLICAS (Sin autenticación)
     // ========================================
-    '' => 'AuthController@showLogin',
-    'auth/login' => 'AuthController@login',
+    '' => 'HomeController@index',
+    'login' => 'AuthController@showLogin',
+    'auth/login' => 'AuthController@showLogin',
+    'auth/do-login' => 'AuthController@login',
     'auth/logout' => 'AuthController@logout',
     
     // ========================================
@@ -32,10 +34,10 @@ return [
     'admin/businesses' => 'Admin\BusinessController@index',
     'admin/businesses/create' => 'Admin\BusinessController@create',
     'admin/businesses/store' => 'Admin\BusinessController@store',
-    'admin/businesses/edit/{id}' => 'Admin\BusinessController@edit',
-    'admin/businesses/update/{id}' => 'Admin\BusinessController@update',
-    'admin/businesses/delete/{id}' => 'Admin\BusinessController@delete',
-    'admin/businesses/view/{id}' => 'Admin\BusinessController@view',
+    'admin/businesses/edit' => 'Admin\BusinessController@edit',
+    'admin/businesses/update' => 'Admin\BusinessController@update',
+    'admin/businesses/delete' => 'Admin\BusinessController@delete',
+    'admin/businesses/view' => 'Admin\BusinessController@view',
     
     // Gestión de Áreas de Negocio
     'admin/business-areas/{business_id}' => 'Admin\BusinessController@areas',

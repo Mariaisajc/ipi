@@ -1,0 +1,470 @@
+/**
+ * IPI - Innovation Performance Index
+ * Estilos del Panel de Administración
+ */
+
+/* ============================================
+   LAYOUT PRINCIPAL
+   ============================================ */
+.admin-body {
+    background-color: #f8f9fa;
+    font-family: 'Poppins', sans-serif;
+}
+
+.admin-wrapper {
+    display: flex;
+    min-height: calc(100vh - 70px);
+    margin-top: 70px;
+}
+
+.admin-main {
+    flex: 1;
+    padding: 30px;
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.admin-header {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    padding: 15px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    height: 70px;
+}
+
+.sidebar-toggle {
+    color: #214247;
+    font-size: 24px;
+    padding: 0;
+    margin-right: 15px;
+    border: none;
+    background: none;
+}
+
+.sidebar-toggle:hover {
+    color: #457373;
+}
+
+.header-logo {
+    display: inline-flex;
+    flex-direction: column;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #214247;
+    letter-spacing: 1px;
+}
+
+.logo-subtitle {
+    font-size: 11px;
+    color: #457373;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.header-search {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.header-search .input-group-text {
+    background: white;
+    border-right: none;
+    color: #6c757d;
+}
+
+.header-search .form-control {
+    border-left: none;
+    padding-left: 0;
+}
+
+.header-search .form-control:focus {
+    border-color: #b7c6c2;
+    box-shadow: none;
+}
+
+.header-icon {
+    color: #214247;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.header-icon:hover {
+    background: #f8f9fa;
+    color: #457373;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #214247, #457373);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.header-user {
+    text-decoration: none;
+    color: #214247;
+    padding: 5px 10px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.header-user:hover {
+    background: #f8f9fa;
+}
+
+.user-info {
+    text-align: left;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #214247;
+}
+
+.user-role {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Notifications Dropdown */
+.notifications-dropdown {
+    width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.notification-item:hover {
+    background: #f8f9fa;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.admin-sidebar {
+    width: 280px;
+    background: #214247;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 1020;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    flex: 1;
+    padding: 20px 0;
+}
+
+.sidebar-section {
+    margin-bottom: 25px;
+}
+
+.sidebar-header {
+    color: #b7c6c2;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 0 20px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: #e6dbcb;
+    text-decoration: none;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.sidebar-item i {
+    font-size: 20px;
+    margin-right: 12px;
+    width: 24px;
+    text-align: center;
+}
+
+.sidebar-item span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: 25px;
+}
+
+.sidebar-item.active {
+    background: #457373;
+    color: white;
+    border-left: 4px solid #e6dbcb;
+    padding-left: 16px;
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-footer-content {
+    text-align: center;
+}
+
+/* Sidebar Overlay para móvil */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1010;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.admin-footer {
+    background: white;
+    border-top: 1px solid #e9ecef;
+    padding: 20px 0;
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+}
+
+.footer-links a {
+    transition: color 0.3s;
+}
+
+.footer-links a:hover {
+    color: #214247 !important;
+}
+
+/* ============================================
+   CARDS Y COMPONENTES
+   ============================================ */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.stat-icon.primary {
+    background: linear-gradient(135deg, #214247, #457373);
+    color: white;
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.stat-icon.warning {
+    background: linear-gradient(135deg, #ffc107, #ffb300);
+    color: white;
+}
+
+.stat-icon.danger {
+    background: linear-gradient(135deg, #e63946, #d32f3c);
+    color: white;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #214247;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #214247;
+    margin-bottom: 5px;
+}
+
+.page-subtitle {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* Content Card */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+}
+
+.content-card-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.content-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #214247;
+    margin: 0;
+}
+
+.content-card-body {
+    padding: 25px;
+}
+
+/* Tables */
+.table-custom {
+    margin: 0;
+}
+
+.table-custom thead th {
+    background: #f8f9fa;
+    color: #214247;
+    font-weight: 600;
+    border-bottom: 2px solid #e9ecef;
+    padding: 15px;
+}
+
+.table-custom tbody td {
+    padding: 15px;
+    vertical-align: middle;
+}
+
+.table-custom tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Badges */
+.badge-custom {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+/* Buttons */
+.btn-ipi {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-ipi-primary {
+    background: #214247;
+    color: white;
+    border: none;
+}
+
+.btn-ipi-primary:hover {
+    background: #457373;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(33, 66, 71, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 991px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .admin-main {
+        margin-left: 0;
+    }
+    
+    .admin-footer {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-main {
+        padding: 20px 15px;
+    }
+    
+    .page-title {
+        font-size: 24px;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+    }
+}
