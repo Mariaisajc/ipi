@@ -246,8 +246,10 @@ if ($flashData):
                         Volver al Listado
                     </a>
                     
+                    
+                    <!-- Botón Eliminar con validación -->
                     <?php if ($canDeleteData['can_delete']): ?>
-                        <button onclick="confirmDelete()" 
+                        <button onclick="openDeleteModal()" 
                                 class="btn btn-outline-danger">
                             <i class="bi bi-trash me-1"></i>
                             Eliminar Usuario
@@ -259,7 +261,8 @@ if ($flashData):
                             <i class="bi bi-lock me-1"></i>
                             No se puede eliminar
                         </button>
-                        <small class="text-muted mt-2 d-block">
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
                             <?= e($canDeleteData['reason']) ?>
                         </small>
                     <?php endif; ?>
@@ -312,28 +315,88 @@ if ($flashData):
 </div>
 
 <script>
-function confirmDelete() {
-    if (confirm('¿Estás seguro de eliminar este usuario?\n\nEsta acción no se puede deshacer.')) {
-        fetch('<?= url('admin/users/destroy') ?>', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'id=<?= $user['id'] ?>'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                window.location.href = '<?= url('admin/users') ?>';
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al eliminar el usuario');
-        });
-    }
+/**
+ * Abrir modal de confirmación de eliminación
+ */
+function openDeleteModal() {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+/**
+ * Eliminar usuario
+ */
+function deleteUser() {
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
+    
+    fetch('<?= url('admin/users/destroy') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: 'id=<?= $user['id'] ?>'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+            
+            // Mostrar mensaje y redirigir
+            alert(data.message);
+            window.location.href = '<?= url('admin/users') ?>';
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i>Confirmar Eliminación';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al eliminar el usuario');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-trash me-1"></i>Confirmar Eliminación';
+    });
 }
 </script>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Información del usuario -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 mb-2">¿Desea realmente eliminar por completo este usuario?</h5>
+                    <p class="text-muted mb-0">Esta acción no se puede deshacer</p>
+                </div>
+                
+                <div class="bg-light p-3 rounded text-center">
+                    <strong>Usuario:</strong> 
+                    <span class="text-danger fw-bold"><?= e($user['login']) ?></span>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteUser()">
+                    <i class="bi bi-trash me-1"></i>
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
