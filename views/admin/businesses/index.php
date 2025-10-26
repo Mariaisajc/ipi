@@ -126,13 +126,27 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <small class="text-muted"><?= date('H:i', strtotime($business['created_at'])) ?></small>
                             </td>
                             <td>
-                                <div class="d-flex align-items-center">
+                                <?php
+                                $usersCount = (int)($business['users_count'] ?? 0);
+                                ?>
+                                <?php if ($usersCount > 0): ?>
+                                    <a href="<?= url('admin/businesses/show?id=' . $business['id'] . '#users') ?>" 
+                                       class="text-decoration-none">
+                                        <span class="badge bg-primary rounded-pill">
+                                            <i class="bi bi-people-fill me-1"></i>
+                                            <span class="fw-bold"><?= $usersCount ?></span>
+                                        </span>
+                                        <small class="text-muted ms-2">
+                                            usuario<?= $usersCount > 1 ? 's' : '' ?>
+                                        </small>
+                                    </a>
+                                <?php else: ?>
                                     <span class="badge bg-secondary rounded-pill">
                                         <i class="bi bi-people me-1"></i>
                                         <span class="fw-bold">0</span>
                                     </span>
-                                    <small class="text-muted ms-2">Pendiente</small>
-                                </div>
+                                    <small class="text-muted ms-2">Sin usuarios</small>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php 

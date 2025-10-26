@@ -275,6 +275,138 @@ if (!empty($business['idiomas_participantes'])) {
         </div>
         <?php endif; ?>
         
+        <!-- Usuarios Asociados -->
+        <div class="card mb-4" id="users">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-people-fill me-2"></i>
+                    Usuarios Asociados
+                </h5>
+                <?php
+                $usersCount = (int)($business['users_count'] ?? 0);
+                ?>
+                <span class="badge bg-primary rounded-pill">
+                    <?= $usersCount ?>
+                </span>
+            </div>
+            <div class="card-body">
+                <?php
+                // Obtener usuarios de esta empresa
+                $businessModel = new Business();
+                $users = $businessModel->getUsers($business['id']);
+                $usersStats = $businessModel->getUsersStats($business['id']);
+                ?>
+                
+                <?php if (empty($users)): ?>
+                    <!-- Estado vacío -->
+                    <div class="text-center py-4">
+                        <i class="bi bi-people" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3 mb-3">
+                            No hay usuarios asociados a esta empresa
+                        </p>
+                        <a href="<?= url('admin/users/create?business_id=' . $business['id']) ?>" 
+                           class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Crear Usuario
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <!-- Estadísticas rápidas -->
+                    <div class="row mb-3">
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="text-muted small">Total</div>
+                                <div class="fs-5 fw-bold"><?= $usersStats['total'] ?></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="text-muted small">Activos</div>
+                                <div class="fs-5 fw-bold text-success"><?= $usersStats['active'] ?></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="text-muted small">Inactivos</div>
+                                <div class="fs-5 fw-bold text-secondary"><?= $usersStats['inactive'] ?></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="text-muted small">Encuestados</div>
+                                <div class="fs-5 fw-bold text-info"><?= $usersStats['encuestados'] ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lista de usuarios -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($users as $user): ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold"><?= e($user['login']) ?></div>
+                                        <?php if (!empty($user['name'])): ?>
+                                            <small class="text-muted"><?= e($user['name']) ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($user['role'] === 'admin'): ?>
+                                            <span class="badge bg-danger">Admin</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-info">Encuestado</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($user['status'] === 'active'): ?>
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Activo
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-pause-circle me-1"></i>Inactivo
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="<?= url('admin/users/show?id=' . $user['id']) ?>" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Ver detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Botón para crear más usuarios -->
+                    <div class="text-center mt-3">
+                        <a href="<?= url('admin/users/create?business_id=' . $business['id']) ?>" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Agregar Usuario
+                        </a>
+                        <a href="<?= url('admin/users?business_id=' . $business['id']) ?>" 
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-list me-1"></i>
+                            Ver Todos
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
     </div>
     
     <!-- Columna Derecha (Sidebar) -->
@@ -339,6 +471,13 @@ if (!empty($business['idiomas_participantes'])) {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">Áreas de Negocio</span>
                     <span class="badge bg-success fs-6"><?= count($areas) ?></span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Usuarios Registrados</span>
+                    <span class="badge bg-primary fs-6">
+                        <?= (int)($business['users_count'] ?? 0) ?>
+                    </span>
                 </div>
                 
                 <?php if (!empty($business['area_empleados'])): ?>

@@ -112,6 +112,10 @@ class UserController extends Controller {
         // Validar login
         if (empty($login)) {
             $errors[] = 'El login es obligatorio';
+        } elseif (strlen($login) < 3) {
+            $errors[] = 'El login debe tener al menos 3 caracteres';
+        } elseif (!preg_match('/^[a-z0-9_]+$/', $login)) {
+            $errors[] = 'El login solo puede contener minúsculas, números y guión bajo (_)';
         } elseif ($this->userModel->loginExists($login)) {
             $errors[] = 'El login ya está en uso';
         }
@@ -319,6 +323,10 @@ class UserController extends Controller {
         // Validar login
         if (empty($login)) {
             $errors[] = 'El login es obligatorio';
+        } elseif (strlen($login) < 3) {
+            $errors[] = 'El login debe tener al menos 3 caracteres';
+        } elseif (!preg_match('/^[a-z0-9_]+$/', $login)) {
+            $errors[] = 'El login solo puede contener minúsculas, números y guión bajo (_)';
         } elseif ($this->userModel->loginExists($login, $id)) {
             $errors[] = 'El login ya está en uso';
         }
@@ -413,7 +421,84 @@ class UserController extends Controller {
     }
     
     /**
-     * Eliminar usuario
+     * Cambiar estado del usuario (activar/inactivar)
+     * Permite cambiar estado de cualquier usuario
+     */
+    public function toggleStatus() {
+        header('Content-Type: application/json');
+        
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
+        $newStatus = isset($_POST['status']) ? $_POST['status'] : null;
+        
+        // Validar ID
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID no proporcionado']);
+            return;
+        }
+        
+        // Validar estado
+        if (!in_array($newStatus, ['active', 'inactive'])) {
+            echo json_encode(['success' => false, 'message' => 'Estado inválido']);
+            return;
+        }
+        
+        // Obtener usuario
+        $user = $this->userModel->getById($id);
+        
+        if (!$user) {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+            return;
+        }
+        
+        // No permitir desactivar al usuario conectado
+        if ($id == $_SESSION['user_id'] && $newStatus === 'inactive') {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'No puedes desactivar tu propia cuenta'
+            ]);
+            return;
+        }
+        
+        // Validar fechas para encuestados
+        if ($user['role'] === 'encuestado' && !empty($user['start_date']) && !empty($user['end_date'])) {
+            $today = date('Y-m-d');
+            
+            // No permitir activar si está fuera del período
+            if ($newStatus === 'active') {
+                if ($today < $user['start_date']) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'No se puede activar: El período de acceso aún no ha iniciado'
+                    ]);
+                    return;
+                }
+                
+                if ($today > $user['end_date']) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'No se puede activar: El período de acceso ya expiró'
+                    ]);
+                    return;
+                }
+            }
+        }
+        
+        // Actualizar estado
+        $updated = $this->userModel->update($id, ['status' => $newStatus]);
+        
+        if ($updated) {
+            $action = $newStatus === 'active' ? 'activado' : 'inactivado';
+            echo json_encode([
+                'success' => true, 
+                'message' => "Usuario {$action} exitosamente"
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al cambiar el estado']);
+        }
+    }
+    
+    /**
+     * Eliminar usuario (deprecado - mantenido para compatibilidad)
      */
     public function destroy() {
         $id = $this->input('id');

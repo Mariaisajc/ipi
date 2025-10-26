@@ -45,8 +45,18 @@ if ($flashData):
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="login" class="form-label">Login <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="login" name="login" required>
-                            <small class="text-muted">Nombre de usuario único para iniciar sesión</small>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="login" 
+                                   name="login" 
+                                   pattern="[a-z0-9_]+" 
+                                   title="Solo minúsculas, números y guiones bajos"
+                                   required>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Solo minúsculas, números y guión bajo (_). Sin espacios ni caracteres especiales
+                            </small>
+                            <div id="loginFeedback" class="invalid-feedback"></div>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -174,6 +184,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const userForm = document.getElementById('userForm');
     const password = document.getElementById('password');
     const passwordConfirm = document.getElementById('password_confirm');
+    const loginInput = document.getElementById('login');
+    const loginFeedback = document.getElementById('loginFeedback');
+    
+    // Validación del login en tiempo real
+    loginInput.addEventListener('input', function() {
+        let value = this.value;
+        
+        // Convertir a minúsculas automáticamente
+        this.value = value.toLowerCase();
+        
+        // Validar caracteres permitidos
+        const validPattern = /^[a-z0-9_]*$/;
+        
+        if (!validPattern.test(this.value)) {
+            // Eliminar caracteres no válidos
+            this.value = this.value.replace(/[^a-z0-9_]/g, '');
+            
+            // Mostrar feedback
+            this.classList.add('is-invalid');
+            loginFeedback.textContent = 'Solo se permiten minúsculas, números y guión bajo (_)';
+        } else if (this.value.length > 0) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+            loginFeedback.textContent = '';
+        } else {
+            this.classList.remove('is-invalid', 'is-valid');
+            loginFeedback.textContent = '';
+        }
+    });
+    
+    // Validación al perder el foco
+    loginInput.addEventListener('blur', function() {
+        if (this.value.length === 0) {
+            this.classList.add('is-invalid');
+            loginFeedback.textContent = 'El login es obligatorio';
+        } else if (this.value.length < 3) {
+            this.classList.add('is-invalid');
+            loginFeedback.textContent = 'El login debe tener al menos 3 caracteres';
+        }
+    });
     
     // Toggle para mostrar/ocultar contraseña
     const togglePassword = document.getElementById('togglePassword');

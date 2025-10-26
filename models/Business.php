@@ -14,9 +14,11 @@ class Business extends Model {
      */
     public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT b.*, 
-                COUNT(DISTINCT ba.id) as areas_count
+                COUNT(DISTINCT ba.id) as areas_count,
+                COUNT(DISTINCT u.id) as users_count
                 FROM {$this->table} b
                 LEFT JOIN business_areas ba ON b.id = ba.business_id
+                LEFT JOIN users u ON b.id = u.business_id
                 GROUP BY b.id
                 ORDER BY b.created_at DESC";
         
@@ -32,9 +34,11 @@ class Business extends Model {
      */
     public function getById($id) {
         $sql = "SELECT b.*, 
-                COUNT(DISTINCT ba.id) as areas_count
+                COUNT(DISTINCT ba.id) as areas_count,
+                COUNT(DISTINCT u.id) as users_count
                 FROM {$this->table} b
                 LEFT JOIN business_areas ba ON b.id = ba.business_id
+                LEFT JOIN users u ON b.id = u.business_id
                 WHERE b.id = ?
                 GROUP BY b.id";
         
@@ -328,5 +332,55 @@ class Business extends Model {
                 ORDER BY name ASC";
         
         return $this->query($sql);
+    }
+    
+    /**
+     * Obtener usuarios asociados a una empresa
+     * 
+     * @param int $businessId ID de la empresa
+     * @return array Lista de usuarios
+     */
+    public function getUsers($businessId) {
+        $sql = "SELECT 
+                    u.id,
+                    u.login,
+                    u.name,
+                    u.email,
+                    u.role,
+                    u.status,
+                    u.start_date,
+                    u.end_date,
+                    u.created_at
+                FROM users u
+                WHERE u.business_id = ?
+                ORDER BY u.created_at DESC";
+        
+        return $this->query($sql, [$businessId]);
+    }
+    
+    /**
+     * Obtener estadísticas de usuarios por empresa
+     * 
+     * @param int $businessId ID de la empresa
+     * @return array Estadísticas de usuarios
+     */
+    public function getUsersStats($businessId) {
+        $sql = "SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive,
+                    SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admins,
+                    SUM(CASE WHEN role = 'encuestado' THEN 1 ELSE 0 END) as encuestados
+                FROM users
+                WHERE business_id = ?";
+        
+        $result = $this->query($sql, [$businessId]);
+        return $result[0] ?? [
+            'total' => 0,
+            'active' => 0,
+            'inactive' => 0,
+            'admins' => 0,
+            'encuestados' => 0
+        ];
     }
 }
