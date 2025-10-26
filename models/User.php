@@ -1,166 +1,170 @@
 <?php
 /**
- * IPI - Innovation Performance Index
- * Modelo: User
- * 
+ * User Model
  * Gestión de usuarios del sistema
  */
 
 class User extends Model {
+    
     protected $table = 'users';
     protected $primaryKey = 'id';
     
     /**
-     * Buscar usuario por login o email
-     * 
-     * @param string $login
-     * @return array|false
+     * Obtener todos los usuarios con paginación
      */
-    public function findByLogin($login) {
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE (login = :login OR email = :email) 
-                LIMIT 1";
+    public function getAll($limit = null, $offset = 0) {
+        $sql = "SELECT u.*, 
+                b.name as business_name,
+                creator.name as created_by_name
+                FROM {$this->table} u
+                LEFT JOIN businesses b ON u.business_id = b.id
+                LEFT JOIN users creator ON u.created_by = creator.id
+                ORDER BY u.created_at DESC";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            'login' => $login,
-            'email' => $login
-        ]);
+        if ($limit) {
+            $sql .= " LIMIT {$limit} OFFSET {$offset}";
+        }
         
-        return $stmt->fetch();
+        return $this->query($sql);
     }
     
     /**
-     * Buscar usuario activo por login o email
-     * 
-     * @param string $login
-     * @return array|false
+     * Obtener usuario por ID
      */
-    public function findActiveByLogin($login) {
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE (login = :login OR email = :email) 
-                AND status = 'active' 
-                LIMIT 1";
+    public function getById($id) {
+        $sql = "SELECT u.*, 
+                b.name as business_name,
+                creator.name as created_by_name
+                FROM {$this->table} u
+                LEFT JOIN businesses b ON u.business_id = b.id
+                LEFT JOIN users creator ON u.created_by = creator.id
+                WHERE u.id = ?";
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            'login' => $login,
-            'email' => $login
-        ]);
-        
-        return $stmt->fetch();
+        $result = $this->query($sql, [$id]);
+        return $result[0] ?? null;
     }
     
     /**
-     * Buscar usuario por email
-     * 
-     * @param string $email
-     * @return array|false
+     * Obtener usuario por login
      */
-    public function findByEmail($email) {
-        return $this->findBy(['email' => $email]);
+    public function getByLogin($login) {
+        $sql = "SELECT * FROM {$this->table} WHERE login = ?";
+        $result = $this->query($sql, [$login]);
+        return $result[0] ?? null;
+    }
+    
+    /**
+     * Obtener usuario por email
+     */
+    public function getByEmail($email) {
+        $sql = "SELECT * FROM {$this->table} WHERE email = ?";
+        $result = $this->query($sql, [$email]);
+        return $result[0] ?? null;
     }
     
     /**
      * Crear nuevo usuario
-     * 
-     * @param array $data
-     * @return int|string ID del usuario creado
      */
-    public function createUser($data) {
-        // Hash de la contraseña
-        if (isset($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+    public function create($data) {
+        // Convertir email vacío a NULL para evitar duplicados
+        if (isset($data['email']) && empty($data['email'])) {
+            $data['email'] = null;
         }
         
-        // Establecer valores por defecto
-        $data['status'] = $data['status'] ?? 'active';
-        $data['role'] = $data['role'] ?? 'encuestado';
-        
-        return $this->create($data);
+        // Usar el método create del padre que maneja INSERT automáticamente
+        return parent::create($data);
     }
     
     /**
      * Actualizar usuario
-     * 
-     * @param int $id
-     * @param array $data
-     * @return bool
      */
-    public function updateUser($id, $data) {
-        // Si se actualiza la contraseña, hashearla
-        if (isset($data['password']) && !empty($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
-        } else {
-            // Si no se proporciona contraseña, no actualizarla
+    public function update($id, $data) {
+        // Convertir email vacío a NULL para evitar duplicados
+        if (isset($data['email']) && empty($data['email'])) {
+            $data['email'] = null;
+        }
+        
+        // Si no hay contraseña nueva, eliminarla del array
+        if (isset($data['password']) && empty($data['password'])) {
             unset($data['password']);
         }
         
-        return $this->update($id, $data);
+        // Usar el método update del padre
+        return parent::update($id, $data);
     }
     
     /**
-     * Obtener usuarios por rol
-     * 
-     * @param string $role
-     * @return array
+     * Eliminar usuario
      */
-    public function getUsersByRole($role) {
-        return $this->all(['role' => $role, 'status' => 'active'], 'name ASC');
+    public function delete($id) {
+        return parent::delete($id);
     }
     
     /**
-     * Obtener usuarios de una empresa
-     * 
-     * @param int $businessId
-     * @return array
+     * Actualizar último login
      */
-    public function getUsersByBusiness($businessId) {
-        $sql = "SELECT u.*, b.name as business_name 
+    public function updateLastLogin($id) {
+        $sql = "UPDATE {$this->table} SET last_login = NOW() WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$id]);
+    }
+    
+    /**
+     * Buscar usuarios
+     */
+    public function search($term) {
+        $sql = "SELECT u.*, 
+                b.name as business_name,
+                creator.name as created_by_name
                 FROM {$this->table} u
                 LEFT JOIN businesses b ON u.business_id = b.id
-                WHERE u.business_id = :business_id
+                LEFT JOIN users creator ON u.created_by = creator.id
+                WHERE u.login LIKE ? OR u.name LIKE ? OR u.email LIKE ?
                 ORDER BY u.name ASC";
         
-        return $this->query($sql, ['business_id' => $businessId]);
+        $searchTerm = "%{$term}%";
+        return $this->query($sql, [$searchTerm, $searchTerm, $searchTerm]);
     }
     
     /**
-     * Obtener todos los usuarios con información de empresa
-     * 
-     * @param array $filters Filtros opcionales
-     * @return array
+     * Filtrar usuarios con múltiples criterios
      */
-    public function getAllWithBusiness($filters = []) {
-        $sql = "SELECT u.*, b.name as business_name 
+    public function filter($filters) {
+        $sql = "SELECT u.*, 
+                b.name as business_name,
+                creator.name as created_by_name
                 FROM {$this->table} u
                 LEFT JOIN businesses b ON u.business_id = b.id
+                LEFT JOIN users creator ON u.created_by = creator.id
                 WHERE 1=1";
         
         $params = [];
         
-        // Filtrar por rol
-        if (!empty($filters['role'])) {
-            $sql .= " AND u.role = :role";
-            $params['role'] = $filters['role'];
-        }
-        
-        // Filtrar por estado
-        if (!empty($filters['status'])) {
-            $sql .= " AND u.status = :status";
-            $params['status'] = $filters['status'];
-        }
-        
-        // Filtrar por empresa
-        if (!empty($filters['business_id'])) {
-            $sql .= " AND u.business_id = :business_id";
-            $params['business_id'] = $filters['business_id'];
-        }
-        
         // Búsqueda por texto
         if (!empty($filters['search'])) {
-            $sql .= " AND (u.name LIKE :search OR u.login LIKE :search OR u.email LIKE :search)";
-            $params['search'] = '%' . $filters['search'] . '%';
+            $sql .= " AND (u.login LIKE ? OR u.name LIKE ? OR u.email LIKE ?)";
+            $searchTerm = "%{$filters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // Filtro por rol
+        if (!empty($filters['role'])) {
+            $sql .= " AND u.role = ?";
+            $params[] = $filters['role'];
+        }
+        
+        // Filtro por estado
+        if (!empty($filters['status'])) {
+            $sql .= " AND u.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        // Filtro por empresa
+        if (!empty($filters['business_id'])) {
+            $sql .= " AND u.business_id = ?";
+            $params[] = $filters['business_id'];
         }
         
         $sql .= " ORDER BY u.created_at DESC";
@@ -169,173 +173,237 @@ class User extends Model {
     }
     
     /**
-     * Cambiar estado de un usuario (activo/inactivo)
-     * 
-     * @param int $id
-     * @return bool
+     * Contar total de usuarios
      */
-    public function toggleStatus($id) {
-        $user = $this->find($id);
+    public function countAll() {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+        $result = $this->query($sql);
+        return $result[0]['total'] ?? 0;
+    }
+    
+    /**
+     * Verificar si el login ya existe
+     */
+    public function loginExists($login, $excludeId = null) {
+        $sql = "SELECT id FROM {$this->table} WHERE login = ?";
+        $params = [$login];
+        
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+        
+        $result = $this->query($sql, $params);
+        return !empty($result);
+    }
+    
+    /**
+     * Verificar si el email ya existe
+     */
+    public function emailExists($email, $excludeId = null) {
+        if (empty($email)) return false;
+        
+        $sql = "SELECT id FROM {$this->table} WHERE email = ?";
+        $params = [$email];
+        
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+        
+        $result = $this->query($sql, $params);
+        return !empty($result);
+    }
+    
+    /**
+     * Verificar si un usuario puede ser eliminado
+     * No se puede eliminar si:
+     * 1. Es admin (no se eliminan entre ellos)
+     * 2. Tiene respuestas asociadas
+     * 3. Tiene formularios asignados
+     */
+    public function canDelete($id) {
+        // Obtener usuario
+        $user = $this->getById($id);
         
         if (!$user) {
-            return false;
+            return ['can_delete' => false, 'reason' => 'Usuario no encontrado'];
         }
         
-        $newStatus = $user['status'] === 'active' ? 'inactive' : 'active';
-        
-        return $this->update($id, ['status' => $newStatus]);
-    }
-    
-    /**
-     * Actualizar fecha de último login
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function updateLastLogin($id) {
-        $sql = "UPDATE {$this->table} SET last_login = NOW() WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        
-        return $stmt->execute(['id' => $id]);
-    }
-    
-    /**
-     * Verificar si un login ya existe
-     * 
-     * @param string $login
-     * @param int|null $exceptId ID a excluir de la búsqueda
-     * @return bool
-     */
-    public function loginExists($login, $exceptId = null) {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE login = :login";
-        
-        if ($exceptId) {
-            $sql .= " AND id != :except_id";
-            $result = $this->query($sql, ['login' => $login, 'except_id' => $exceptId]);
-        } else {
-            $result = $this->query($sql, ['login' => $login]);
+        // Los admin no se pueden eliminar entre ellos
+        if ($user['role'] === 'admin') {
+            return ['can_delete' => false, 'reason' => 'Los administradores no pueden ser eliminados'];
         }
         
-        return $result[0]['count'] > 0;
-    }
-    
-    /**
-     * Verificar si un email ya existe
-     * 
-     * @param string $email
-     * @param int|null $exceptId ID a excluir de la búsqueda
-     * @return bool
-     */
-    public function emailExists($email, $exceptId = null) {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE email = :email";
-        
-        if ($exceptId) {
-            $sql .= " AND id != :except_id";
-            $result = $this->query($sql, ['email' => $email, 'except_id' => $exceptId]);
-        } else {
-            $result = $this->query($sql, ['email' => $email]);
+        // Verificar si tiene respuestas (cuando se implemente)
+        // TODO: Descomentar cuando exista la tabla responses
+        /*
+        $sqlResponses = "SELECT COUNT(*) as total FROM responses WHERE user_id = ?";
+        $responses = $this->query($sqlResponses, [$id]);
+        if ($responses[0]['total'] > 0) {
+            return ['can_delete' => false, 'reason' => 'El usuario tiene respuestas asociadas'];
         }
+        */
         
-        return $result[0]['count'] > 0;
-    }
-    
-    /**
-     * Contar usuarios por rol
-     * 
-     * @return array
-     */
-    public function countByRole() {
-        $sql = "SELECT role, COUNT(*) as count 
-                FROM {$this->table} 
-                WHERE status = 'active'
-                GROUP BY role";
-        
-        $result = $this->query($sql);
-        
-        $counts = [
-            'admin' => 0,
-            'encuestado' => 0
-        ];
-        
-        foreach ($result as $row) {
-            $counts[$row['role']] = (int) $row['count'];
+        // Verificar si tiene formularios asignados (cuando se implemente)
+        // TODO: Descomentar cuando exista la tabla form_assignments
+        /*
+        $sqlForms = "SELECT COUNT(*) as total FROM form_assignments WHERE user_id = ?";
+        $forms = $this->query($sqlForms, [$id]);
+        if ($forms[0]['total'] > 0) {
+            return ['can_delete' => false, 'reason' => 'El usuario tiene formularios asignados'];
         }
+        */
         
-        return $counts;
+        return ['can_delete' => true, 'reason' => ''];
     }
     
     /**
-     * Obtener usuarios encuestados sin empresa asignada
-     * 
-     * @return array
+     * Obtener usuarios por empresa
      */
-    public function getEncuestadosWithoutBusiness() {
+    public function getByBusiness($businessId) {
         $sql = "SELECT * FROM {$this->table} 
-                WHERE role = 'encuestado' 
-                AND business_id IS NULL 
-                AND status = 'active'
+                WHERE business_id = ? 
                 ORDER BY name ASC";
         
-        return $this->query($sql);
+        return $this->query($sql, [$businessId]);
     }
     
     /**
-     * Asignar empresa a un usuario
-     * 
-     * @param int $userId
-     * @param int $businessId
-     * @return bool
+     * Obtener usuarios por rol
      */
-    public function assignBusiness($userId, $businessId) {
-        return $this->update($userId, ['business_id' => $businessId]);
+    public function getByRole($role) {
+        $sql = "SELECT u.*, 
+                b.name as business_name
+                FROM {$this->table} u
+                LEFT JOIN businesses b ON u.business_id = b.id
+                WHERE u.role = ? 
+                ORDER BY u.name ASC";
+        
+        return $this->query($sql, [$role]);
     }
     
     /**
-     * Obtener estadísticas de usuarios
+     * Hash de contraseña
+     */
+    public function hashPassword($password) {
+        return password_hash($password, PASSWORD_BCRYPT);
+    }
+    
+    /**
+     * Verificar contraseña
+     */
+    public function verifyPassword($password, $hash) {
+        return password_verify($password, $hash);
+    }
+    
+    /**
+     * Gestionar estados de usuarios encuestados según fechas
+     * - Inactiva usuarios expirados (end_date < hoy)
+     * - Inactiva usuarios pendientes (start_date > hoy)
+     * - Activa usuarios en período válido (hoy entre start_date y end_date)
+     * 
+     * @return array Estadísticas de cambios
+     */
+    public function manageUserStatusByDates() {
+        $today = date('Y-m-d');
+        $stats = [
+            'inactivated_expired' => 0,
+            'inactivated_pending' => 0,
+            'activated' => 0
+        ];
+        
+        // 1. Inactivar usuarios EXPIRADOS (end_date < hoy)
+        $sql = "UPDATE {$this->table} 
+                SET status = 'inactive' 
+                WHERE role = 'encuestado' 
+                AND status = 'active' 
+                AND end_date < ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$today]);
+        $stats['inactivated_expired'] = $stmt->rowCount();
+        
+        // 2. Inactivar usuarios PENDIENTES (start_date > hoy)
+        $sql = "UPDATE {$this->table} 
+                SET status = 'inactive' 
+                WHERE role = 'encuestado' 
+                AND status = 'active' 
+                AND start_date > ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$today]);
+        $stats['inactivated_pending'] = $stmt->rowCount();
+        
+        // 3. Activar usuarios en PERÍODO VÁLIDO (start_date <= hoy <= end_date)
+        $sql = "UPDATE {$this->table} 
+                SET status = 'active' 
+                WHERE role = 'encuestado' 
+                AND status = 'inactive' 
+                AND start_date <= ? 
+                AND end_date >= ?";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$today, $today]);
+        $stats['activated'] = $stmt->rowCount();
+        
+        return $stats;
+    }
+    
+    /**
+     * Inactivar usuarios encuestados cuya fecha de fin ya pasó
+     * (Método legacy - usar manageUserStatusByDates)
+     * 
+     * @return int Número de usuarios inactivados
+     */
+    public function inactivateExpiredUsers() {
+        $stats = $this->manageUserStatusByDates();
+        return $stats['inactivated_expired'];
+    }
+    
+    /**
+     * Obtener usuarios encuestados que expiran hoy
      * 
      * @return array
      */
-    public function getStats() {
-        $sql = "SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive,
-                    SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admins,
-                    SUM(CASE WHEN role = 'encuestado' THEN 1 ELSE 0 END) as encuestados
-                FROM {$this->table}";
+    public function getExpiringToday() {
+        $today = date('Y-m-d');
         
-        $result = $this->query($sql);
+        $sql = "SELECT u.*, b.name as business_name
+                FROM {$this->table} u
+                LEFT JOIN businesses b ON u.business_id = b.id
+                WHERE u.role = 'encuestado' 
+                AND u.status = 'active' 
+                AND u.end_date = ?";
         
-        return $result[0];
+        return $this->query($sql, [$today]);
     }
     
     /**
-     * Cambiar contraseña
+     * Obtener estado calculado del usuario según fechas
      * 
-     * @param int $userId
-     * @param string $newPassword
-     * @return bool
+     * @param array $user Usuario con start_date y end_date
+     * @return string 'pending', 'active', 'expired'
      */
-    public function changePassword($userId, $newPassword) {
-        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
-        
-        return $this->update($userId, ['password' => $hashedPassword]);
-    }
-    
-    /**
-     * Verificar contraseña actual
-     * 
-     * @param int $userId
-     * @param string $password
-     * @return bool
-     */
-    public function verifyPassword($userId, $password) {
-        $user = $this->find($userId);
-        
-        if (!$user) {
-            return false;
+    public function getCalculatedStatus($user) {
+        if ($user['role'] !== 'encuestado') {
+            return $user['status'];
         }
         
-        return password_verify($password, $user['password']);
+        if (empty($user['start_date']) || empty($user['end_date'])) {
+            return $user['status'];
+        }
+        
+        $today = date('Y-m-d');
+        $startDate = $user['start_date'];
+        $endDate = $user['end_date'];
+        
+        if ($today < $startDate) {
+            return 'pending';  // Aún no empieza
+        } elseif ($today > $endDate) {
+            return 'expired';  // Ya terminó
+        } else {
+            return 'active';   // En período válido
+        }
     }
 }

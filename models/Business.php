@@ -316,4 +316,17 @@ class Business extends Model {
         // Por ahora, retornar false (no hay encuestas implementadas)
         return false;
     }
+    
+    /**
+     * Obtener solo empresas activas
+     * Para usar en selectores
+     */
+    public function getActive() {
+        $sql = "SELECT id, name, nit, status 
+                FROM {$this->table} 
+                WHERE status = 'active'
+                ORDER BY name ASC";
+        
+        return $this->query($sql);
+    }
 }
