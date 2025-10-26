@@ -406,4 +406,47 @@ class User extends Model {
             return 'active';   // En período válido
         }
     }
+    
+    /**
+     * Contar usuarios por rol
+     * 
+     * @return array ['admin' => count, 'encuestado' => count]
+     */
+    public function countByRole() {
+        $sql = "SELECT role, COUNT(*) as count 
+                FROM {$this->table} 
+                WHERE status = 'active'
+                GROUP BY role";
+        
+        $results = $this->query($sql);
+        
+        $counts = [
+            'admin' => 0,
+            'encuestado' => 0
+        ];
+        
+        foreach ($results as $row) {
+            $counts[$row['role']] = (int)$row['count'];
+        }
+        
+        return $counts;
+    }
+    
+    /**
+     * Buscar usuario activo por login o email
+     * Usado para autenticación
+     * 
+     * @param string $login Login o email del usuario
+     * @return array|null Usuario encontrado o null
+     */
+    public function findActiveByLogin($login) {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE (login = ? OR email = ?) 
+                AND status = 'active' 
+                LIMIT 1";
+        
+        $result = $this->query($sql, [$login, $login]);
+        
+        return !empty($result) ? $result[0] : null;
+    }
 }

@@ -208,13 +208,19 @@ class UserController extends Controller {
      * Ver detalles de usuario
      */
     public function show() {
-        $id = $this->input('id');
+        // Obtener ID desde la URL (?id=X)
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         
         if (!$id) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'ID de usuario no proporcionado'
+            ];
             $this->redirect('admin/users');
             return;
         }
         
+        // Obtener usuario por ID
         $user = $this->userModel->getById($id);
         
         if (!$user) {
@@ -240,13 +246,19 @@ class UserController extends Controller {
      * Mostrar formulario de edición
      */
     public function edit() {
-        $id = $this->input('id');
+        // Obtener ID desde la URL (?id=X)
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         
         if (!$id) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'ID de usuario no proporcionado'
+            ];
             $this->redirect('admin/users');
             return;
         }
         
+        // Obtener usuario por ID
         $user = $this->userModel->getById($id);
         
         if (!$user) {

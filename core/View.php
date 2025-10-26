@@ -32,7 +32,7 @@ class View {
         $config = $this->config;
         $baseUrl = $this->config['url'];
         $auth = new Auth();
-        $user = $auth->user();
+        $authUser = $auth->user();  // Renombrado de $user a $authUser
         $csrf = new CSRF();
         
         // Obtener mensaje flash si existe

@@ -48,24 +48,23 @@ return [
     'admin/users' => 'Admin\UserController@index',
     'admin/users/create' => 'Admin\UserController@create',
     'admin/users/store' => 'Admin\UserController@store',
-    'admin/users/edit/{id}' => 'Admin\UserController@edit',
-    'admin/users/update/{id}' => 'Admin\UserController@update',
-    'admin/users/delete/{id}' => 'Admin\UserController@delete',
-    'admin/users/toggle-status/{id}' => 'Admin\UserController@toggleStatus',
+    'admin/users/show' => 'Admin\UserController@show',
+    'admin/users/edit' => 'Admin\UserController@edit',
+    'admin/users/update' => 'Admin\UserController@update',
+    'admin/users/delete' => 'Admin\UserController@delete',
+    'admin/users/destroy' => 'Admin\UserController@destroy',
+    'admin/users/toggle-status' => 'Admin\UserController@toggleStatus',
     
     // Gestión de Formularios
     'admin/forms' => 'Admin\FormController@index',
     'admin/forms/create' => 'Admin\FormController@create',
     'admin/forms/store' => 'Admin\FormController@store',
-    'admin/forms/edit/{id}' => 'Admin\FormController@edit',
-    'admin/forms/update/{id}' => 'Admin\FormController@update',
-    'admin/forms/delete/{id}' => 'Admin\FormController@delete',
-    'admin/forms/duplicate/{id}' => 'Admin\FormController@duplicate',
-    'admin/forms/toggle-status/{id}' => 'Admin\FormController@toggleStatus',
-    
-    // Constructor de Formularios (Form Builder)
-    'admin/forms/builder/{id}' => 'Admin\FormController@builder',
-    'admin/forms/preview/{id}' => 'Admin\FormController@preview',
+    'admin/forms/show' => 'Admin\FormController@show',
+    'admin/forms/edit' => 'Admin\FormController@edit',
+    'admin/forms/update' => 'Admin\FormController@update',
+    'admin/forms/delete' => 'Admin\FormController@delete',
+    'admin/forms/duplicate' => 'Admin\FormController@duplicate',
+    'admin/forms/change-status' => 'Admin\FormController@changeStatus',
     
     // Gestión de Preguntas
     'admin/questions/store' => 'Admin\QuestionController@store',
