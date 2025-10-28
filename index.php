@@ -66,6 +66,41 @@ require_once CORE_PATH . '/Auth.php';
 require_once CORE_PATH . '/CSRF.php';
 require_once CORE_PATH . '/Validator.php';
 
+// ========================================
+// ⭐ CARGAR MODELOS MANUALMENTE
+// ========================================
+
+// Modelos existentes
+require_once MODELS_PATH . '/Business.php';
+require_once MODELS_PATH . '/BusinessArea.php';
+require_once MODELS_PATH . '/User.php';
+
+// ⭐ NUEVOS MODELOS DE FORMULARIOS
+require_once MODELS_PATH . '/Form.php';
+require_once MODELS_PATH . '/Question.php';
+require_once MODELS_PATH . '/QuestionOption.php';
+require_once MODELS_PATH . '/QuestionType.php';
+
+// ========================================
+// ⭐ CARGAR CONTROLADORES MANUALMENTE
+// ========================================
+
+// Controladores principales
+require_once CONTROLLERS_PATH . '/HomeController.php';
+require_once CONTROLLERS_PATH . '/AuthController.php';
+
+// Controladores Admin
+require_once CONTROLLERS_PATH . '/Admin/DashboardController.php';
+require_once CONTROLLERS_PATH . '/Admin/BusinessController.php';
+require_once CONTROLLERS_PATH . '/Admin/UserController.php';
+
+// ⭐ NUEVO: Controlador de Formularios
+require_once CONTROLLERS_PATH . '/Admin/FormController.php';
+
+// ========================================
+// FIN CARGA MANUAL
+// ========================================
+
 // Cargar helpers
 require_once HELPERS_PATH . '/functions.php';
 

@@ -60,11 +60,16 @@ return [
     'admin/forms/create' => 'Admin\FormController@create',
     'admin/forms/store' => 'Admin\FormController@store',
     'admin/forms/show' => 'Admin\FormController@show',
+    'admin/forms/view' => 'Admin\FormController@show',
     'admin/forms/edit' => 'Admin\FormController@edit',
     'admin/forms/update' => 'Admin\FormController@update',
-    'admin/forms/delete' => 'Admin\FormController@delete',
+    'admin/forms/destroy' => 'Admin\FormController@destroy',
+    'admin/forms/delete' => 'Admin\FormController@destroy',
     'admin/forms/duplicate' => 'Admin\FormController@duplicate',
     'admin/forms/change-status' => 'Admin\FormController@changeStatus',
+    'admin/forms/publish' => 'Admin\FormController@publish',
+    'admin/forms/close' => 'Admin\FormController@close',
+    'admin/forms/builder' => 'Admin\FormController@builder',
     
     // Gestión de Preguntas
     'admin/questions/store' => 'Admin\QuestionController@store',

@@ -1,0 +1,226 @@
+/**
+ * Form Builder - Estilos
+ * Estilos para el constructor visual de formularios
+ */
+
+/* ============================================
+   PREGUNTAS
+   ============================================ */
+
+.question-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    cursor: move;
+    transition: all 0.3s ease;
+}
+
+.question-item:hover {
+    border-color: #5a6c57;
+    box-shadow: 0 2px 8px rgba(90, 108, 87, 0.1);
+}
+
+.question-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+/* ============================================
+   DRAG HANDLE
+   ============================================ */
+
+.drag-handle {
+    cursor: move;
+    color: #6c757d;
+    margin-right: 10px;
+}
+
+.drag-handle:hover {
+    color: #5a6c57;
+}
+
+/* ============================================
+   BADGES Y TIPOS
+   ============================================ */
+
+.question-type-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+/* ============================================
+   ESTADO VACÍO
+   ============================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+}
+
+.empty-state h5 {
+    margin-top: 1rem;
+    color: #6c757d;
+}
+
+.empty-state p {
+    color: #6c757d;
+}
+
+/* ============================================
+   SELECTOR DE TIPOS
+   ============================================ */
+
+.type-selector {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.type-selector:hover {
+    border-color: #5a6c57;
+    background-color: #e8f5e9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(90, 108, 87, 0.15);
+}
+
+.type-selector i {
+    font-size: 2rem;
+    color: #5a6c57;
+    margin-bottom: 8px;
+}
+
+.type-selector .type-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.builder-sidebar {
+    position: sticky;
+    top: 20px;
+}
+
+/* ============================================
+   OPCIONES DE PREGUNTAS
+   ============================================ */
+
+.question-options {
+    margin-top: 10px;
+    padding-left: 30px;
+}
+
+.option-item {
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+/* ============================================
+   MODAL DE PREGUNTA
+   ============================================ */
+
+#options_container {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+#options_list .input-group {
+    margin-bottom: 10px;
+}
+
+#options_list .form-control {
+    border-radius: 6px 0 0 6px;
+}
+
+#options_list .btn-outline-danger {
+    border-radius: 0 6px 6px 0;
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.question-item {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .builder-sidebar {
+        position: static;
+        margin-top: 20px;
+    }
+    
+    .type-selector {
+        padding: 12px 8px;
+    }
+    
+    .type-selector i {
+        font-size: 1.5rem;
+    }
+    
+    .type-selector .type-name {
+        font-size: 0.85rem;
+    }
+}
+
+/* ============================================
+   BOTONES DE ACCIÓN
+   ============================================ */
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.btn-outline-primary:hover {
+    background-color: #5a6c57;
+    border-color: #5a6c57;
+    color: white;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
