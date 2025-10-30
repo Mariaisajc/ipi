@@ -63,6 +63,23 @@ class User extends Model {
     }
     
     /**
+     * Buscar usuario por login o email
+     * Usado para verificar existencia en el login
+     * 
+     * @param string $login Login o email del usuario
+     * @return array|null Usuario encontrado o null
+     */
+    public function findByLogin($login) {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE (login = ? OR email = ?)
+                LIMIT 1";
+        
+        $result = $this->query($sql, [$login, $login]);
+        
+        return !empty($result) ? $result[0] : null;
+    }
+    
+    /**
      * Crear nuevo usuario
      */
     public function create($data) {

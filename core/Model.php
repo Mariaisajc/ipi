@@ -17,24 +17,18 @@ class Model {
      * Constructor - Establece conexión con la base de datos
      */
     public function __construct() {
-        $this->db = $this->connect();
+        $this->db = self::getDbConnection();
     }
-    
+
     /**
-     * Conectar a la base de datos usando PDO
-     * 
-     * @return PDO
+     * Obtiene la instancia única de la conexión PDO
      */
-    protected function connect() {
+    public static function getDbConnection() {
         static $pdo = null;
-        
-        if ($pdo !== null) {
-            return $pdo;
-        }
-        
-        try {
+
+        if ($pdo === null) {
             $config = require CONFIG_PATH . '/database.php';
-            
+
             $dsn = sprintf(
                 "%s:host=%s;port=%s;dbname=%s;charset=%s",
                 $config['driver'],
@@ -43,16 +37,22 @@ class Model {
                 $config['database'],
                 $config['charset']
             );
-            
-            $pdo = new PDO($dsn, $config['username'], $config['password'], $config['options']);
-            
-            return $pdo;
-            
-        } catch (PDOException $e) {
-            // Registrar error y lanzar excepción
-            error_log("Error de conexión a BD: " . $e->getMessage());
-            throw new Exception("No se pudo conectar a la base de datos");
+
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            try {
+                $pdo = new PDO($dsn, $config['username'], $config['password'], $options);
+            } catch (PDOException $e) {
+                // Registrar error y lanzar excepción
+                error_log("Error de conexión a BD: " . $e->getMessage());
+                throw new Exception("No se pudo conectar a la base de datos");
+            }
         }
+        return $pdo;
     }
     
     /**

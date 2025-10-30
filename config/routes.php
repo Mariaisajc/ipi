@@ -70,17 +70,20 @@ return [
     'admin/forms/publish' => 'Admin\FormController@publish',
     'admin/forms/close' => 'Admin\FormController@close',
     'admin/forms/builder' => 'Admin\FormController@builder',
+    'admin/forms/{id}/questions-for-linking' => 'Admin\FormController@getQuestionsForLinking',
+    
     
     // Gestión de Preguntas
     'admin/questions/store' => 'Admin\QuestionController@store',
-    'admin/questions/update/{id}' => 'Admin\QuestionController@update',
-    'admin/questions/delete/{id}' => 'Admin\QuestionController@delete',
+    'admin/questions/update' => 'Admin\QuestionController@update', // Corregido: sin {id}
+    'admin/questions/delete' => 'Admin\QuestionController@delete', // Corregido: sin {id}
     'admin/questions/reorder' => 'Admin\QuestionController@reorder',
+    'admin/questions/get' => 'Admin\QuestionController@get', // Añadida ruta para obtener pregunta
     
-    // Gestión de Opciones de Preguntas
-    'admin/question-options/store' => 'Admin\QuestionController@storeOption',
-    'admin/question-options/update/{id}' => 'Admin\QuestionController@updateOption',
-    'admin/question-options/delete/{id}' => 'Admin\QuestionController@deleteOption',
+    // Gestión de Opciones de Preguntas (Estas rutas no se usan, se manejan en QuestionController)
+    // 'admin/question-options/store' => 'Admin\QuestionController@storeOption',
+    // 'admin/question-options/update/{id}' => 'Admin\QuestionController@updateOption',
+    // 'admin/question-options/delete/{id}' => 'Admin\QuestionController@deleteOption',
     
     // Preguntas Condicionales (Padre-Hijo)
     'admin/question-children/store' => 'Admin\QuestionController@storeChild',

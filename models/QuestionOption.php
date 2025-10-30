@@ -10,24 +10,21 @@ class QuestionOption extends Model {
     /**
      * Obtener todas las opciones de una pregunta
      */
-    public function getByQuestionId($questionId) {
+    public function getByQuestionId($questionId, $db_connection = null) {
         $sql = "SELECT * FROM {$this->table} 
                 WHERE question_id = ? 
                 ORDER BY order_number ASC";
         
-        return $this->query($sql, [$questionId]);
+        return $this->query($sql, [$questionId], $db_connection);
     }
     
     /**
      * Crear nueva opción
      */
-    public function create($data) {
+    public function create($data, $db_connection = null) {
         // Obtener el siguiente order_number
-        $sql = "SELECT COALESCE(MAX(order_number), 0) + 1 as next_order 
-                FROM {$this->table} 
-                WHERE question_id = ?";
-        
-        $result = $this->query($sql, [$data['question_id']]);
+        $sql_order = "SELECT COALESCE(MAX(order_number), 0) + 1 as next_order FROM {$this->table} WHERE question_id = ?";
+        $result = $this->query($sql_order, [$data['question_id']], $db_connection);
         $orderNumber = $data['order_number'] ?? $result[0]['next_order'];
         
         $sql = "INSERT INTO {$this->table} 
@@ -39,25 +36,48 @@ class QuestionOption extends Model {
             $data['option_text'],
             $data['value'] ?? $data['option_text'],
             $orderNumber
-        ]);
+        ], $db_connection);
         
-        return $this->db->lastInsertId();
+        $db = $db_connection ?? $this->db;
+        return $db->lastInsertId();
     }
     
     /**
      * Actualizar opción
      */
-    public function update($id, $data) {
-        $sql = "UPDATE {$this->table} 
-                SET option_text = ?,
-                    value = ?
-                WHERE id = ?";
+    public function update($id, $data, $db_connection = null) {
+        // Construir la consulta dinámicamente para ser más flexible
+        $fields = [];
+        $params = [];
         
-        return $this->query($sql, [
-            $data['option_text'],
-            $data['value'] ?? $data['option_text'],
-            $id
-        ]);
+        if (isset($data['option_text'])) {
+            $fields[] = "option_text = ?";
+            $params[] = $data['option_text'];
+            // Actualizar 'value' también si no se especifica
+            if (!isset($data['value'])) {
+                $fields[] = "value = ?";
+                $params[] = $data['option_text'];
+            }
+        }
+        
+        if (isset($data['value'])) {
+            $fields[] = "value = ?";
+            $params[] = $data['value'];
+        }
+
+        if (isset($data['order_number'])) {
+            $fields[] = "order_number = ?";
+            $params[] = $data['order_number'];
+        }
+
+        if (empty($fields)) {
+            return true; // No hay nada que actualizar
+        }
+        
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ?";
+        $params[] = $id;
+        
+        return $this->query($sql, $params, $db_connection);
     }
     
     /**
@@ -74,6 +94,21 @@ class QuestionOption extends Model {
     public function deleteByQuestionId($questionId) {
         $sql = "DELETE FROM {$this->table} WHERE question_id = ?";
         return $this->query($sql, [$questionId]);
+    }
+
+    /**
+     * Eliminar un conjunto específico de opciones para una pregunta
+     */
+    public function deleteByQuestionIdAndOptionIds($questionId, $optionIds, $db_connection = null) {
+        if (empty($optionIds)) {
+            return true;
+        }
+        $placeholders = implode(',', array_fill(0, count($optionIds), '?'));
+        $params = $optionIds;
+        $params[] = $questionId;
+        
+        $sql = "DELETE FROM {$this->table} WHERE id IN ($placeholders) AND question_id = ?";
+        return $this->query($sql, $params, $db_connection);
     }
     
     /**

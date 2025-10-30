@@ -467,9 +467,45 @@ class FormController extends Controller {
             ]);
         }
     }
-    
+
     /**
-     * Cambiar estado del formulario (AJAX)
+     * Obtiene una lista de preguntas de un formulario para usar en lógica condicional.
+     * Excluye una pregunta específica si se proporciona.
+     * Responde vía AJAX.
+     */
+    public function getQuestionsForLinking($formId) {
+        if (!$this->isAjax()) {
+            $this->forbidden();
+        }
+
+        $excludedQuestionId = $_GET['exclude'] ?? null;
+
+        if (!$this->questionModel) {
+            $this->questionModel = new Question();
+        }
+
+        $questions = $this->questionModel->getByFormId($formId);
+
+        // Filtrar la pregunta excluida
+        if ($excludedQuestionId) {
+            $questions = array_filter($questions, function($q) use ($excludedQuestionId) {
+                return $q['id'] != $excludedQuestionId;
+            });
+        }
+
+        // Devolver solo los campos necesarios para reducir el tamaño de la respuesta
+        $result = array_map(function($q) {
+            return [
+                'id' => $q['id'],
+                'question_text' => $q['question_text']
+            ];
+        }, $questions);
+
+        $this->json(array_values($result)); // Re-indexar array después de filter
+    }
+
+    /**
+     * Cambiar el estado de un formulario (borrador, activo, cerrado)
      */
     public function changeStatus() {
         if (!$this->auth->check()) {

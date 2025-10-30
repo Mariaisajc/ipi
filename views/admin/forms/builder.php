@@ -279,8 +279,19 @@ if ($flashData):
                                placeholder="Ejemplo: Escribe aquí tu respuesta...">
                     </div>
                     
-                    <!-- Obligatoria -->
-                    <div class="mb-3 form-check">
+                    <!-- Opciones de Pregunta -->
+                    <div id="options_container" class="mb-3" style="display: none;">
+                        <label class="form-label">Opciones</label>
+                        <div id="options_list">
+                            <!-- Las opciones se agregarán aquí dinámicamente -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addOption()">
+                            <i class="bi bi-plus-circle"></i> Añadir Opción
+                        </button>
+                    </div>
+
+                    <!-- Campo Requerido -->
+                    <div class="form-check form-switch mb-3">
                         <input type="checkbox" 
                                class="form-check-input" 
                                id="required" 
@@ -289,18 +300,6 @@ if ($flashData):
                         <label class="form-check-label" for="required">
                             Pregunta obligatoria
                         </label>
-                    </div>
-                    
-                    <!-- Opciones (solo para radio, checkbox, select) -->
-                    <div id="options_container" style="display: none;">
-                        <hr>
-                        <label class="form-label fw-bold">Opciones de respuesta</label>
-                        <p class="text-muted small">Agrega las opciones que el usuario podrá seleccionar:</p>
-                        <div id="options_list"></div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addOption()">
-                            <i class="bi bi-plus-circle me-1"></i>
-                            Agregar Opción
-                        </button>
                     </div>
                 </form>
             </div>

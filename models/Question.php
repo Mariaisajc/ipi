@@ -10,7 +10,7 @@ class Question extends Model {
     /**
      * Obtener pregunta por ID con tipo
      */
-    public function getByIdWithType($id) {
+    public function getByIdWithType($id, $db_connection = null) {
         $sql = "SELECT q.*, 
                        qt.name as type_name, 
                        qt.description as type_label
@@ -18,7 +18,7 @@ class Question extends Model {
                 INNER JOIN question_types qt ON q.type_id = qt.id
                 WHERE q.id = ?";
         
-        $result = $this->query($sql, [$id]);
+        $result = $this->query($sql, [$id], $db_connection);
         return $result ? $result[0] : null;
     }
     
@@ -40,13 +40,10 @@ class Question extends Model {
     /**
      * Crear nueva pregunta
      */
-    public function create($data) {
+    public function create($data, $db_connection = null) {
         // Obtener el siguiente order_number
-        $sql = "SELECT COALESCE(MAX(order_number), 0) + 1 as next_order 
-                FROM {$this->table} 
-                WHERE form_id = ?";
-        
-        $result = $this->query($sql, [$data['form_id']]);
+        $sql_order = "SELECT COALESCE(MAX(order_number), 0) + 1 as next_order FROM {$this->table} WHERE form_id = ?";
+        $result = $this->query($sql_order, [$data['form_id']], $db_connection);
         $orderNumber = $data['order_number'] ?? $result[0]['next_order'];
         
         $sql = "INSERT INTO {$this->table} 
@@ -63,32 +60,41 @@ class Question extends Model {
             $data['placeholder'] ?? null,
             $data['help_text'] ?? null,
             $data['created_by']
-        ]);
+        ], $db_connection);
         
-        return $this->db->lastInsertId();
+        $db = $db_connection ?? $this->db;
+        return $db->lastInsertId();
     }
     
     /**
      * Actualizar pregunta
      */
-    public function update($id, $data) {
-        $sql = "UPDATE {$this->table} 
-                SET question_text = ?,
-                    type_id = ?,
-                    required = ?,
-                    placeholder = ?,
-                    help_text = ?,
-                    updated_at = NOW()
-                WHERE id = ?";
+    public function update($id, $data, $db_connection = null) {
+        $fields = [];
+        $params = [];
+
+        // Lista de campos permitidos para actualizar
+        $allowedFields = ['question_text', 'type_id', 'required', 'placeholder', 'help_text'];
+
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "{$field} = ?";
+                $params[] = $data[$field];
+            }
+        }
+
+        // Si no hay campos para actualizar, no hacer nada
+        if (empty($fields)) {
+            return true;
+        }
+
+        // Siempre actualizar la fecha de modificación
+        $fields[] = "updated_at = NOW()";
+
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ?";
+        $params[] = $id;
         
-        return $this->query($sql, [
-            $data['question_text'],
-            $data['type_id'],
-            $data['required'] ?? 0,
-            $data['placeholder'] ?? null,
-            $data['help_text'] ?? null,
-            $id
-        ]);
+        return $this->query($sql, $params, $db_connection);
     }
     
     /**
@@ -134,24 +140,28 @@ class Question extends Model {
     }
     
     /**
-     * Obtener opciones de una pregunta
+     * Obtener opciones de una pregunta, incluyendo la lógica condicional
      */
-    public function getOptions($questionId) {
-        $sql = "SELECT * FROM question_options 
-                WHERE question_id = ? 
-                ORDER BY order_number ASC";
+    public function getOptions($questionId, $db_connection = null) {
+        $sql = "SELECT 
+                    opt.*,
+                    qc.child_question_id
+                FROM question_options opt
+                LEFT JOIN question_children qc ON opt.id = qc.parent_option_id
+                WHERE opt.question_id = ? 
+                ORDER BY opt.order_number ASC";
         
-        return $this->query($sql, [$questionId]);
+        return $this->query($sql, [$questionId], $db_connection);
     }
     
     /**
      * Obtener pregunta con opciones
      */
-    public function getWithOptions($id) {
-        $question = $this->getByIdWithType($id);
+    public function getWithOptions($id, $db_connection = null) {
+        $question = $this->getByIdWithType($id, $db_connection);
         
         if ($question) {
-            $question['options'] = $this->getOptions($id);
+            $question['options'] = $this->getOptions($id, $db_connection);
         }
         
         return $question;

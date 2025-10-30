@@ -10,17 +10,26 @@ class QuestionType extends Model {
     /**
      * Obtener todos los tipos de preguntas
      */
-    public function getAll() {
+    public function getAll($db_connection = null) {
         $sql = "SELECT * FROM {$this->table} ORDER BY id ASC";
-        return $this->query($sql);
+        return $this->query($sql, [], $db_connection);
+    }
+
+    /**
+     * Obtener un tipo por su ID
+     */
+    public function getById($id, $db_connection = null) {
+        $sql = "SELECT * FROM {$this->table} WHERE id = ?";
+        $result = $this->query($sql, [$id], $db_connection);
+        return $result ? $result[0] : null;
     }
     
     /**
      * Obtener tipo por nombre
      */
-    public function getByName($name) {
+    public function getByName($name, $db_connection = null) {
         $sql = "SELECT * FROM {$this->table} WHERE name = ?";
-        $result = $this->query($sql, [$name]);
+        $result = $this->query($sql, [$name], $db_connection);
         return $result ? $result[0] : null;
     }
     

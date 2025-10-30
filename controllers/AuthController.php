@@ -69,10 +69,8 @@ class AuthController extends Controller {
             $flashMessage = null;
             if ($existingUser && $existingUser['status'] === 'inactive') {
                 $flashMessage = ['type' => 'error', 'message' => 'Tu cuenta ha sido desactivada. Contacta al administrador.'];
-            } else if ($existingUser) {
-                $flashMessage = ['type' => 'error', 'message' => 'Contraseña incorrecta. Por favor, verifica tus credenciales.'];
             } else {
-                $flashMessage = ['type' => 'error', 'message' => 'Usuario no encontrado. Verifica tu nombre de usuario o email.'];
+                $flashMessage = ['type' => 'error', 'message' => 'Credenciales incorrectas. Por favor, verifica tus datos.'];
             }
             
             $_SESSION['flash'] = $flashMessage;
