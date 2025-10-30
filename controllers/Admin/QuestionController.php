@@ -224,6 +224,7 @@ class QuestionController extends Controller {
         
         $input = json_decode(file_get_contents('php://input'), true);
         
+        // <-- CORREGIDO: Se valida el token que ahora envía el JS -->
         if (!$this->csrf->validate($input['csrf_token'] ?? '')) {
             $this->json(['success' => false, 'message' => 'Token CSRF inválido'], 403);
             return;

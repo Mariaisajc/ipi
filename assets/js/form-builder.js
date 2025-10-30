@@ -7,6 +7,8 @@
 let formId;
 let csrfToken;
 let questionModal;
+let deleteQuestionModal; // <-- NUEVO: Variable para el modal de eliminación
+let questionIdToDelete = null; // <-- NUEVO: ID de la pregunta a eliminar
 let currentQuestionType = null;
 let optionCounter = 0;
 // Almacena las preguntas disponibles para la lógica condicional
@@ -22,9 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
     formId = document.getElementById('form_id')?.value;
     csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     
-    const modalElement = document.getElementById('questionModal');
-    if (modalElement) {
-        questionModal = new bootstrap.Modal(modalElement);
+    const questionModalElement = document.getElementById('questionModal');
+    if (questionModalElement) {
+        questionModal = new bootstrap.Modal(questionModalElement);
+    }
+
+    // <-- NUEVO: Inicializar el modal de eliminación -->
+    const deleteModalElement = document.getElementById('deleteQuestionModal');
+    if (deleteModalElement) {
+        deleteQuestionModal = new bootstrap.Modal(deleteModalElement);
+        document.getElementById('confirmDeleteQuestionBtn').addEventListener('click', performDeleteQuestion);
     }
     
     const questionsList = document.getElementById('questions-list');
@@ -52,10 +61,19 @@ function updateQuestionsOrder() {
         orders[item.dataset.questionId] = index + 1;
     });
     
+    // <-- CORREGIDO: Añadido csrf_token al body -->
     fetch(`${BASE_URL}/admin/questions/reorder`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ form_id: formId, orders: orders })
+        headers: { 
+            'Content-Type': 'application/json', 
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ 
+            form_id: formId, 
+            orders: orders,
+            csrf_token: csrfToken 
+        })
     }).then(res => res.json()).then(data => {
         if (!data.success) console.error('Error al actualizar orden:', data.message);
     }).catch(err => console.error('Error en la petición de reordenar:', err));
@@ -131,14 +149,26 @@ async function editQuestion(questionId) {
     }
 }
 
-// --- NUEVA FUNCIÓN ---
+// --- GESTIÓN DE ELIMINACIÓN ---
+
 /**
- * Eliminar una pregunta
+ * Abre el modal de confirmación para eliminar una pregunta.
+ * @param {number} questionId 
  */
 function deleteQuestion(questionId) {
-    if (!confirm('¿Está seguro de que desea eliminar esta pregunta? Esta acción no se puede deshacer.')) {
-        return;
-    }
+    questionIdToDelete = questionId; // Guarda el ID
+    deleteQuestionModal.show(); // Muestra el modal
+}
+
+/**
+ * Ejecuta la eliminación de la pregunta después de la confirmación.
+ */
+function performDeleteQuestion() {
+    if (!questionIdToDelete) return;
+
+    const deleteButton = document.getElementById('confirmDeleteQuestionBtn');
+    deleteButton.disabled = true;
+    deleteButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
 
     fetch(`${BASE_URL}/admin/questions/delete`, {
         method: 'POST',
@@ -147,12 +177,28 @@ function deleteQuestion(questionId) {
             'X-CSRF-TOKEN': csrfToken,
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ id: questionId, csrf_token: csrfToken })
+        body: JSON.stringify({ id: questionIdToDelete, csrf_token: csrfToken })
     })
     .then(res => res.json())
     .then(result => {
         if (result.success) {
-            location.reload();
+            // Eliminación en tiempo real sin recargar la página
+            const questionItem = document.querySelector(`.question-item[data-question-id="${questionIdToDelete}"]`);
+            if (questionItem) {
+                questionItem.style.transition = 'opacity 0.5s, transform 0.5s';
+                questionItem.style.opacity = '0';
+                questionItem.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    questionItem.remove();
+                    // Actualizar contador de preguntas si existe
+                    const countBadge = document.querySelector('.card-header .badge');
+                    if (countBadge) {
+                        const currentCount = parseInt(countBadge.textContent) || 0;
+                        const newCount = Math.max(0, currentCount - 1);
+                        countBadge.textContent = `${newCount} pregunta${newCount !== 1 ? 's' : ''}`;
+                    }
+                }, 500);
+            }
         } else {
             alert('Error: ' + (result.message || 'No se pudo eliminar la pregunta.'));
         }
@@ -160,9 +206,14 @@ function deleteQuestion(questionId) {
     .catch(error => {
         console.error('Error al eliminar:', error);
         alert('Ocurrió un error de red al intentar eliminar la pregunta.');
+    })
+    .finally(() => {
+        deleteQuestionModal.hide();
+        questionIdToDelete = null;
+        deleteButton.disabled = false;
+        deleteButton.innerHTML = '<i class="bi bi-trash me-1"></i> Sí, Eliminar';
     });
 }
-
 
 function toggleFieldsByType(typeName) {
     const optionsContainer = document.getElementById('options_container');

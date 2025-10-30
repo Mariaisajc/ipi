@@ -314,6 +314,33 @@ if ($flashData):
     </div>
 </div>
 
+<!-- Modal: Confirmar Eliminación de Pregunta -->
+<div class="modal fade" id="deleteQuestionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar esta pregunta? Esta acción no se puede deshacer.</p>
+                <p class="small text-muted">Nota: La pregunta no se podrá eliminar si ya tiene respuestas asociadas.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteQuestionBtn">
+                    <i class="bi bi-trash me-1"></i>
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- SortableJS para drag-and-drop -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 

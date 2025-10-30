@@ -106,8 +106,28 @@ class Question extends Model {
             return false;
         }
         
-        $sql = "DELETE FROM {$this->table} WHERE id = ?";
-        return $this->query($sql, [$id]);
+        $db = Model::getDbConnection();
+        try {
+            $db->beginTransaction();
+
+            // Eliminar dependencias primero (opciones, condicionales)
+            $this->query("DELETE FROM question_options WHERE question_id = ?", [$id], $db);
+            
+            // Eliminar la pregunta principal
+            $stmt = $this->query("DELETE FROM {$this->table} WHERE id = ?", [$id], $db);
+            
+            $db->commit();
+
+            // rowCount() > 0 significa que la fila fue efectivamente eliminada.
+            return $stmt->rowCount() > 0;
+
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log("Error al eliminar pregunta y sus dependencias: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
