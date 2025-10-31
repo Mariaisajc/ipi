@@ -168,11 +168,11 @@ class Form extends Model {
     }
     
     /**
-     * Duplicar formulario
+     * Duplicar formulario (MODIFICADO Y CORREGIDO)
      */
     public function duplicate($id, $userId) {
         // Obtener formulario original
-        $original = $this->getById($id);
+        $original = $this->getByIdWithDetails($id);
         if (!$original) {
             return false;
         }
@@ -185,12 +185,17 @@ class Form extends Model {
             'created_by' => $userId
         ]);
         
-        // Copiar preguntas
-        $questions = $this->getQuestions($id);
+        if (!$newFormId) {
+            return false;
+        }
+
+        // Copiar preguntas y sus opciones
         $questionModel = new Question();
+        $optionModel = new QuestionOption();
+        $questions = $this->getQuestions($id);
         
         foreach ($questions as $question) {
-            $questionModel->create([
+            $newQuestionId = $questionModel->create([
                 'form_id' => $newFormId,
                 'question_text' => $question['question_text'],
                 'type_id' => $question['type_id'],
@@ -200,6 +205,19 @@ class Form extends Model {
                 'help_text' => $question['help_text'],
                 'created_by' => $userId
             ]);
+
+            // Si la pregunta tiene opciones, copiarlas también
+            $options = $optionModel->getByQuestionId($question['id']);
+            if (!empty($options)) {
+                foreach ($options as $option) {
+                    $optionModel->create([
+                        'question_id' => $newQuestionId,
+                        'option_text' => $option['option_text'],
+                        'value' => $option['value'],
+                        'order_number' => $option['order_number']
+                    ]);
+                }
+            }
         }
         
         return $newFormId;

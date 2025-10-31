@@ -430,27 +430,24 @@ class FormController extends Controller {
     }
     
     /**
-     * Duplicar formulario
+     * Duplicar formulario (MODIFICADO para leer JSON)
      */
     public function duplicate() {
-        if (!$this->auth->check()) {
-            $this->json(['success' => false, 'message' => 'No autenticado']);
+        if (!$this->isAjax() || !$this->auth->check()) {
+            $this->json(['success' => false, 'message' => 'Acceso no permitido'], 403);
             return;
         }
         
-        $this->validateCSRF();
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
         
-        $id = $this->input('id');
+        if (!$this->csrf->validate($input['csrf_token'] ?? '')) {
+            $this->json(['success' => false, 'message' => 'Error de seguridad (CSRF).'], 403);
+            return;
+        }
         
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID no válido']);
-            return;
-        }
-        
-        $form = $this->formModel->getById($id);
-        
-        if (!$form) {
-            $this->json(['success' => false, 'message' => 'Formulario no encontrado']);
+            $this->json(['success' => false, 'message' => 'ID no válido'], 400);
             return;
         }
         
@@ -460,14 +457,14 @@ class FormController extends Controller {
         if ($newFormId) {
             $this->json([
                 'success' => true, 
-                'message' => 'Formulario duplicado exitosamente',
+                'message' => 'Formulario duplicado exitosamente. Serás redirigido al constructor.',
                 'form_id' => $newFormId
             ]);
         } else {
             $this->json([
                 'success' => false, 
-                'message' => 'Error al duplicar el formulario'
-            ]);
+                'message' => 'Error al duplicar el formulario en la base de datos.'
+            ], 500);
         }
     }
 

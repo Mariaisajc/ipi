@@ -11,7 +11,7 @@ $pageTitle = $title ?? 'Asignar Usuarios';
         <h1 class="h3 mb-1"><?= $pageTitle ?></h1>
         <p class="text-muted mb-0">Asigna "<strong><?= e($form['title']) ?></strong>" a los usuarios.</p>
     </div>
-    <a href="<?= url('admin/forms/view?id=' . $form['id']) ?>" class="btn btn-outline-secondary">
+    <a href="<?= url('admin/forms/show?id=' . $form['id']) ?>" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>
         Volver al Detalle
     </a>

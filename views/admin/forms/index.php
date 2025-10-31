@@ -229,7 +229,7 @@ if ($flashData):
                                         <!-- Duplicar -->
                                         <button type="button" 
                                                 class="btn btn-outline-info"
-                                                onclick="duplicateForm(<?= $form['id'] ?>)"
+                                                onclick="duplicateForm(<?= $form['id'] ?>, '<?= e($form['title']) ?>')"
                                                 title="Duplicar">
                                             <i class="bi bi-files"></i>
                                         </button>
@@ -283,46 +283,128 @@ if ($flashData):
     </div>
 </div>
 
+<!-- NUEVO: Modal de Duplicación -->
+<div class="modal fade" id="duplicateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">
+                    <i class="bi bi-files text-info me-2"></i>
+                    Confirmar Duplicación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea duplicar el formulario?</p>
+                <p class="fw-bold text-primary mb-2" id="formToDuplicate"></p>
+                <p class="text-muted small mb-0">Se creará una copia nueva en estado "Borrador" con todas sus preguntas. Las asignaciones de usuarios y las respuestas no serán duplicadas.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-info" id="confirmDuplicate">
+                    <i class="bi bi-files me-1"></i>
+                    Sí, Duplicar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO: Contenedor para notificaciones Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
+            <strong class="me-auto">Notificación</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="notificationToastBody">
+            <!-- El mensaje se insertará aquí -->
+        </div>
+    </div>
+</div>
+
 <script>
 // CSRF Token
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
 // Variable para almacenar el ID a eliminar
 let formIdToDelete = null;
+// NUEVO: Variable para almacenar el ID a duplicar
+let formIdToDuplicate = null;
 
 /**
- * Duplicar formulario
+ * Duplicar formulario (MODIFICADO para usar un modal)
  */
-function duplicateForm(formId) {
-    if (!confirm('¿Desea duplicar este formulario?')) {
-        return;
-    }
+function duplicateForm(formId, formTitle) {
+    formIdToDuplicate = formId;
+    document.getElementById('formToDuplicate').textContent = formTitle;
     
+    const modal = new bootstrap.Modal(document.getElementById('duplicateModal'));
+    modal.show();
+}
+
+// NUEVO: Confirmar duplicación (CORREGIDO con Toast)
+document.getElementById('confirmDuplicate').addEventListener('click', function() {
+    if (!formIdToDuplicate) return;
+
+    const button = this;
+    const originalButtonText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Duplicando...';
+    
+    // Ocultar el modal de confirmación
+    const duplicateModal = bootstrap.Modal.getInstance(document.getElementById('duplicateModal'));
+    if (duplicateModal) {
+        duplicateModal.hide();
+    }
+
     fetch('<?= url('admin/forms/duplicate') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-            id: formId,
+            id: formIdToDuplicate,
             csrf_token: csrfToken
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
-            // Redirigir al constructor del nuevo formulario
-            window.location.href = '<?= url('admin/forms/builder?id=') ?>' + data.form_id;
+            // Mostrar el Toast de éxito
+            const toastElement = document.getElementById('notificationToast');
+            const toastBody = document.getElementById('notificationToastBody');
+            toastBody.textContent = data.message;
+            
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            // Redirigir después de 2 segundos
+            setTimeout(() => {
+                window.location.href = '<?= url('admin/forms/builder?id=') ?>' + data.form_id;
+            }, 2000);
+
         } else {
-            alert('Error: ' + data.message);
+            alert('Error: ' + (data.message || 'No se pudo duplicar el formulario.'));
+            // Reactivar el botón en caso de error
+            button.disabled = false;
+            button.innerHTML = originalButtonText;
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al duplicar el formulario');
+        alert('Error de red al duplicar el formulario.');
+        // Reactivar el botón en caso de error
+        button.disabled = false;
+        button.innerHTML = originalButtonText;
     });
-}
+});
+
 
 /**
  * Eliminar formulario

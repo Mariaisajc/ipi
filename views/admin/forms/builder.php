@@ -41,7 +41,7 @@ function getQuestionIcon($type) {
         </p>
     </div>
     <div>
-        <a href="<?= url('admin/forms/view?id=' . $formId) ?>" class="btn btn-outline-secondary">
+        <a href="<?= url('admin/forms/show?id=' . $formId) ?>" class="btn btn-outline-secondary">
             <i class="bi bi-eye me-1"></i>
             Vista Previa
         </a>
