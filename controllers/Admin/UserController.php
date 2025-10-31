@@ -288,38 +288,20 @@ class UserController extends Controller {
      * Actualizar usuario
      */
     public function update() {
+        if (!$this->isPost()) {
+            $this->redirect('/admin/users');
+        }
+
         $id = $this->input('id');
-        
-        if (!$id) {
-            $this->redirect('admin/users');
-            return;
-        }
-        
         $user = $this->userModel->getById($id);
-        
-        if (!$user) {
-            $_SESSION['flash'] = [
-                'type' => 'error',
-                'message' => 'Usuario no encontrado'
-            ];
-            $this->redirect('admin/users');
-            return;
-        }
-        
+
         // Validaciones
-        $errors = [];
-        
-        $login = trim($this->input('login'));
-        $name = trim($this->input('name'));
-        $email = trim($this->input('email'));
+        $login = $this->input('login');
+        $name = $this->input('name');
+        $email = $this->input('email');
         $password = $this->input('password');
         $password_confirm = $this->input('password_confirm');
-        $role = $this->input('role');
-        $business_id = $this->input('business_id');
-        $start_date = $this->input('start_date');
-        $end_date = $this->input('end_date');
-        $status = $this->input('status');
-        
+
         // Validar login
         if (empty($login)) {
             $errors[] = 'El login es obligatorio';
@@ -349,62 +331,35 @@ class UserController extends Controller {
             }
         }
         
-        // Validar rol
-        if (empty($role) || !in_array($role, ['admin', 'encuestado'])) {
-            $errors[] = 'Debe seleccionar un rol válido';
+        // No permitir cambiar el rol
+        // No actualizar el estado si es encuestado (se gestiona por fechas)
+        if ($user['role'] === 'admin') {
+            // Regla #5: Proteger al super admin de ser inactivado
+            if ($id == 1 && $this->input('status') === 'inactive') {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'El administrador principal no puede ser inactivado.'];
+                $this->redirect('/admin/users/edit/' . $id);
+                return;
+            }
+            $data['status'] = $this->input('status');
         }
-        
-        // Validar datos específicos de encuestado
-        if ($role === 'encuestado') {
-            if (empty($business_id)) {
-                $errors[] = 'Los encuestados deben tener una empresa asignada';
-            }
-            if (empty($start_date)) {
-                $errors[] = 'La fecha de inicio es obligatoria para encuestados';
-            }
-            if (empty($end_date)) {
-                $errors[] = 'La fecha de fin es obligatoria para encuestados';
-            }
-            if (!empty($start_date) && !empty($end_date) && $start_date > $end_date) {
-                $errors[] = 'La fecha de fin debe ser posterior a la fecha de inicio';
-            }
-            
-            // Validar que las fechas sean >= hoy
-            $today = date('Y-m-d');
-            if (!empty($start_date) && $start_date < $today) {
-                $errors[] = 'La fecha de inicio debe ser igual o posterior a hoy';
-            }
-            if (!empty($end_date) && $end_date < $today) {
-                $errors[] = 'La fecha de fin debe ser igual o posterior a hoy';
-            }
-        }
-        
-        if (!empty($errors)) {
-            $_SESSION['flash'] = [
-                'type' => 'error',
-                'message' => implode('<br>', $errors)
-            ];
-            $this->redirect('admin/users/edit?id=' . $id);
-            return;
-        }
-        
-        // Actualizar usuario
+
         $data = [
             'login' => $login,
             'name' => $name,
             'email' => $email,
-            'role' => $role,
-            'business_id' => $role === 'encuestado' ? $business_id : null,
-            'start_date' => $role === 'encuestado' ? $start_date : null,
-            'end_date' => $role === 'encuestado' ? $end_date : null,
-            'status' => $status ?? 'active'
         ];
         
-        // Si hay nueva contraseña, hashearla
-        if (!empty($password)) {
-            $data['password'] = $this->userModel->hashPassword($password);
+        if (!empty($this->input('password'))) {
+            $data['password'] = $this->userModel->hashPassword($this->input('password'));
         }
         
+        // Actualizar datos de encuestado si aplica
+        if ($user['role'] === 'encuestado') {
+            $data['business_id'] = $this->input('business_id');
+            $data['start_date'] = $this->input('start_date');
+            $data['end_date'] = $this->input('end_date');
+        }
+
         if ($this->userModel->update($id, $data)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
@@ -417,6 +372,50 @@ class UserController extends Controller {
                 'message' => 'Error al actualizar el usuario'
             ];
             $this->redirect('admin/users/edit?id=' . $id);
+        }
+    }
+    
+    /**
+     * Eliminar un usuario (AJAX)
+     */
+    public function delete() {
+        header('Content-Type: application/json');
+        
+        if (!$this->isPost() || !$this->isAjax()) {
+            echo json_encode(['success' => false, 'message' => 'Petición no válida']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
+
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID de usuario no proporcionado']);
+            return;
+        }
+
+        // Regla #5: Proteger al super admin
+        if ($id == 1) {
+            echo json_encode(['success' => false, 'message' => 'El administrador principal no puede ser eliminado.']);
+            return;
+        }
+        
+        // Verificar si el usuario actual intenta eliminarse a sí mismo
+        if ($id == $this->auth->user()['id']) {
+            echo json_encode(['success' => false, 'message' => 'No puedes eliminar tu propia cuenta.']);
+            return;
+        }
+
+        $deleteCheck = $this->userModel->canDelete($id);
+        if (!$deleteCheck['can_delete']) {
+            echo json_encode(['success' => false, 'message' => $deleteCheck['reason']]);
+            return;
+        }
+
+        if ($this->userModel->delete($id)) {
+            echo json_encode(['success' => true, 'message' => 'Usuario eliminado exitosamente.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al eliminar el usuario de la base de datos.']);
         }
     }
     

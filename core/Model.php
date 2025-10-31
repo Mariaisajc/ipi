@@ -105,6 +105,69 @@ class Model {
     }
 
     /**
+     * Crear un nuevo registro.
+     *
+     * @param array $data Datos a insertar (columna => valor).
+     * @return string El ID del nuevo registro.
+     */
+    public function create($data) {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+        
+        $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
+        
+        $this->query($sql, array_values($data));
+        
+        return $this->db->lastInsertId();
+    }
+
+    /**
+     * Actualizar un registro por su clave primaria.
+     *
+     * @param int|string $id El ID del registro a actualizar.
+     * @param array $data Datos a actualizar (columna => valor).
+     * @return bool True si fue exitoso.
+     */
+    public function update($id, $data) {
+        $fields = [];
+        foreach ($data as $key => $value) {
+            $fields[] = "{$key} = ?";
+        }
+        $fieldString = implode(', ', $fields);
+        
+        $sql = "UPDATE {$this->table} SET {$fieldString} WHERE {$this->primaryKey} = ?";
+        
+        $params = array_values($data);
+        $params[] = $id;
+        
+        $stmt = $this->query($sql, $params);
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Contar registros que coinciden con las condiciones.
+     *
+     * @param array $conditions Condiciones para la cláusula WHERE.
+     * @return int El número de registros.
+     */
+    public function count($conditions = []) {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+        $params = [];
+
+        if (!empty($conditions)) {
+            $whereClauses = [];
+            foreach ($conditions as $field => $value) {
+                $whereClauses[] = "{$field} = ?";
+                $params[] = $value;
+            }
+            $sql .= " WHERE " . implode(' AND ', $whereClauses);
+        }
+
+        $result = $this->query($sql, $params);
+        return $result ? (int)$result[0]['total'] : 0;
+    }
+
+    /**
      * Devuelve el objeto de conexión PDO.
      */
     public function getDb() {

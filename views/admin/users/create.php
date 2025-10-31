@@ -146,7 +146,8 @@ if ($flashData):
                         </select>
                     </div>
                     
-                    <div class="mb-3">
+                    <!-- CAMBIO: Contenedor para el campo de estado -->
+                    <div class="mb-3" id="statusContainer">
                         <label for="status" class="form-label">Estado <span class="text-danger">*</span></label>
                         <select class="form-select" id="status" name="status" required>
                             <option value="active" selected>Activo</option>
@@ -263,17 +264,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mostrar/ocultar campos de encuestado según rol
     roleSelect.addEventListener('change', function() {
-        if (this.value === 'encuestado') {
-            encuestadoInfo.style.display = 'block';
-            businessSelect.required = true;
-            startDate.required = true;
-            endDate.required = true;
-        } else {
-            encuestadoInfo.style.display = 'none';
-            businessSelect.required = false;
-            startDate.required = false;
-            endDate.required = false;
-        }
+        const isEncuestado = this.value === 'encuestado';
+        
+        encuestadoInfo.style.display = isEncuestado ? 'block' : 'none';
+        businessSelect.required = isEncuestado;
+        startDate.required = isEncuestado;
+        endDate.required = isEncuestado;
+
+        // CAMBIO: Ocultar/mostrar campo de estado
+        document.getElementById('statusContainer').style.display = isEncuestado ? 'none' : 'block';
+        document.getElementById('status').required = !isEncuestado;
     });
     
     // Validar que las contraseñas coincidan

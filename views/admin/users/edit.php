@@ -142,15 +142,13 @@ if ($flashData):
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="role" class="form-label">Rol <span class="text-danger">*</span></label>
-                        <select class="form-select" id="role" name="role" required>
-                            <option value="">Seleccionar rol...</option>
-                            <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Administrador</option>
-                            <option value="encuestado" <?= $user['role'] === 'encuestado' ? 'selected' : '' ?>>Encuestado</option>
-                        </select>
+                        <label for="role" class="form-label">Rol</label>
+                        <!-- CAMBIO: Se elimina el atributo 'name' para que no se envíe -->
+                        <input type="text" class="form-control" id="role" value="<?= $user['role'] === 'admin' ? 'Administrador' : 'Encuestado' ?>" readonly>
                     </div>
                     
-                    <div class="mb-3">
+                    <!-- Contenedor para el campo de estado -->
+                    <div class="mb-3" id="statusContainer" style="display: <?= $user['role'] === 'admin' ? 'block' : 'none' ?>;">
                         <label for="status" class="form-label">Estado <span class="text-danger">*</span></label>
                         <select class="form-select" id="status" name="status" required>
                             <option value="active" <?= $user['status'] === 'active' ? 'selected' : '' ?>>Activo</option>

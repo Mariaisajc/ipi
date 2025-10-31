@@ -32,16 +32,87 @@ class User extends Model {
      * Obtener usuario por ID
      */
     public function getById($id) {
+        $sql = "SELECT u.*, b.name as business_name 
+                FROM {$this->table} u
+                LEFT JOIN businesses b ON u.business_id = b.id
+                WHERE u.id = ?";
+        
+        $result = $this->query($sql, [$id]);
+        return $result ? $result[0] : null;
+    }
+
+    /**
+     * Activa/desactiva usuarios 'encuestado' según sus fechas de vigencia.
+     * Este método centraliza la lógica del cron job para uso en tiempo real.
+     */
+    public function manageUserStatusByDates() {
+        $today = date('Y-m-d');
+
+        // Activar usuarios que están dentro de su período de vigencia y están inactivos
+        $sqlActivate = "UPDATE {$this->table} 
+                        SET status = 'active' 
+                        WHERE role = 'encuestado' 
+                          AND status = 'inactive'
+                          AND ? BETWEEN start_date AND end_date";
+        $this->query($sqlActivate, [$today]);
+
+        // Desactivar usuarios que están fuera de su período de vigencia y están activos
+        $sqlDeactivate = "UPDATE {$this->table} 
+                          SET status = 'inactive' 
+                          WHERE role = 'encuestado' 
+                            AND status = 'active'
+                            AND (? NOT BETWEEN start_date AND end_date)";
+        $this->query($sqlDeactivate, [$today]);
+    }
+
+    /**
+     * Obtener todos los usuarios con filtros y paginación
+     */
+    public function getAllPaginated($filters = [], $page = 1, $perPage = 15) {
         $sql = "SELECT u.*, 
                 b.name as business_name,
                 creator.name as created_by_name
                 FROM {$this->table} u
                 LEFT JOIN businesses b ON u.business_id = b.id
                 LEFT JOIN users creator ON u.created_by = creator.id
-                WHERE u.id = ?";
+                WHERE 1=1";
         
-        $result = $this->query($sql, [$id]);
-        return $result[0] ?? null;
+        $params = [];
+        
+        // Filtros de búsqueda
+        if (!empty($filters['search'])) {
+            $sql .= " AND (u.login LIKE ? OR u.name LIKE ? OR u.email LIKE ?)";
+            $searchTerm = "%{$filters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // Filtro por rol
+        if (!empty($filters['role'])) {
+            $sql .= " AND u.role = ?";
+            $params[] = $filters['role'];
+        }
+        
+        // Filtro por estado
+        if (!empty($filters['status'])) {
+            $sql .= " AND u.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        // Filtro por empresa
+        if (!empty($filters['business_id'])) {
+            $sql .= " AND u.business_id = ?";
+            $params[] = $filters['business_id'];
+        }
+        
+        $sql .= " ORDER BY u.created_at DESC";
+        
+        // Paginación
+        $offset = ($page - 1) * $perPage;
+        $sql .= " LIMIT {$perPage} OFFSET {$offset}";
+        
+        return $this->query($sql, $params);
     }
     
     /**
@@ -240,188 +311,41 @@ class User extends Model {
      * 3. Tiene formularios asignados
      */
     public function canDelete($id) {
-        // Obtener usuario
+        // Regla #5: Proteger al super admin
+        if ($id == 1) {
+            return ['can_delete' => false, 'reason' => 'El administrador principal (ID 1) no puede ser eliminado.'];
+        }
+
         $user = $this->getById($id);
         
         if (!$user) {
             return ['can_delete' => false, 'reason' => 'Usuario no encontrado'];
         }
         
-        // Los admin no se pueden eliminar entre ellos
+        // Regla: Los admin no se pueden eliminar
         if ($user['role'] === 'admin') {
-            return ['can_delete' => false, 'reason' => 'Los administradores no pueden ser eliminados'];
+            return ['can_delete' => false, 'reason' => 'Los administradores no pueden ser eliminados por seguridad.'];
         }
         
-        // Verificar si tiene respuestas (cuando se implemente)
-        // TODO: Descomentar cuando exista la tabla responses
-        /*
-        $sqlResponses = "SELECT COUNT(*) as total FROM responses WHERE user_id = ?";
+        // Regla #4: Verificar si tiene respuestas asociadas
+        // CORRECCIÓN: La consulta ahora une 'answers' con 'responses' para encontrar el 'user_id'
+        $sqlResponses = "SELECT COUNT(a.id) as total 
+                         FROM answers a
+                         INNER JOIN responses r ON a.response_id = r.id
+                         WHERE r.user_id = ?";
         $responses = $this->query($sqlResponses, [$id]);
         if ($responses[0]['total'] > 0) {
-            return ['can_delete' => false, 'reason' => 'El usuario tiene respuestas asociadas'];
+            return ['can_delete' => false, 'reason' => 'El usuario no se puede eliminar porque tiene respuestas asociadas.'];
         }
-        */
         
-        // Verificar si tiene formularios asignados (cuando se implemente)
-        // TODO: Descomentar cuando exista la tabla form_assignments
-        /*
-        $sqlForms = "SELECT COUNT(*) as total FROM form_assignments WHERE user_id = ?";
+        // Regla #4: Verificar si tiene formularios creados
+        $sqlForms = "SELECT COUNT(*) as total FROM forms WHERE created_by = ?";
         $forms = $this->query($sqlForms, [$id]);
         if ($forms[0]['total'] > 0) {
-            return ['can_delete' => false, 'reason' => 'El usuario tiene formularios asignados'];
+            return ['can_delete' => false, 'reason' => 'El usuario no se puede eliminar porque ha creado formularios.'];
         }
-        */
         
         return ['can_delete' => true, 'reason' => ''];
-    }
-    
-    /**
-     * Obtener usuarios por empresa
-     */
-    public function getByBusiness($businessId) {
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE business_id = ? 
-                ORDER BY name ASC";
-        
-        return $this->query($sql, [$businessId]);
-    }
-    
-    /**
-     * Obtener usuarios por rol
-     */
-    public function getByRole($role) {
-        $sql = "SELECT u.*, 
-                b.name as business_name
-                FROM {$this->table} u
-                LEFT JOIN businesses b ON u.business_id = b.id
-                WHERE u.role = ? 
-                ORDER BY u.name ASC";
-        
-        return $this->query($sql, [$role]);
-    }
-    
-    /**
-     * Hash de contraseña
-     */
-    public function hashPassword($password) {
-        return password_hash($password, PASSWORD_BCRYPT);
-    }
-    
-    /**
-     * Verificar contraseña
-     */
-    public function verifyPassword($password, $hash) {
-        return password_verify($password, $hash);
-    }
-    
-    /**
-     * Gestionar estados de usuarios encuestados según fechas
-     * - Inactiva usuarios expirados (end_date < hoy)
-     * - Inactiva usuarios pendientes (start_date > hoy)
-     * - Activa usuarios en período válido (hoy entre start_date y end_date)
-     * 
-     * @return array Estadísticas de cambios
-     */
-    public function manageUserStatusByDates() {
-        $today = date('Y-m-d');
-        $stats = [
-            'inactivated_expired' => 0,
-            'inactivated_pending' => 0,
-            'activated' => 0
-        ];
-        
-        // 1. Inactivar usuarios EXPIRADOS (end_date < hoy)
-        $sql = "UPDATE {$this->table} 
-                SET status = 'inactive' 
-                WHERE role = 'encuestado' 
-                AND status = 'active' 
-                AND end_date < ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$today]);
-        $stats['inactivated_expired'] = $stmt->rowCount();
-        
-        // 2. Inactivar usuarios PENDIENTES (start_date > hoy)
-        $sql = "UPDATE {$this->table} 
-                SET status = 'inactive' 
-                WHERE role = 'encuestado' 
-                AND status = 'active' 
-                AND start_date > ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$today]);
-        $stats['inactivated_pending'] = $stmt->rowCount();
-        
-        // 3. Activar usuarios en PERÍODO VÁLIDO (start_date <= hoy <= end_date)
-        $sql = "UPDATE {$this->table} 
-                SET status = 'active' 
-                WHERE role = 'encuestado' 
-                AND status = 'inactive' 
-                AND start_date <= ? 
-                AND end_date >= ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$today, $today]);
-        $stats['activated'] = $stmt->rowCount();
-        
-        return $stats;
-    }
-    
-    /**
-     * Inactivar usuarios encuestados cuya fecha de fin ya pasó
-     * (Método legacy - usar manageUserStatusByDates)
-     * 
-     * @return int Número de usuarios inactivados
-     */
-    public function inactivateExpiredUsers() {
-        $stats = $this->manageUserStatusByDates();
-        return $stats['inactivated_expired'];
-    }
-    
-    /**
-     * Obtener usuarios encuestados que expiran hoy
-     * 
-     * @return array
-     */
-    public function getExpiringToday() {
-        $today = date('Y-m-d');
-        
-        $sql = "SELECT u.*, b.name as business_name
-                FROM {$this->table} u
-                LEFT JOIN businesses b ON u.business_id = b.id
-                WHERE u.role = 'encuestado' 
-                AND u.status = 'active' 
-                AND u.end_date = ?";
-        
-        return $this->query($sql, [$today]);
-    }
-    
-    /**
-     * Obtener estado calculado del usuario según fechas
-     * 
-     * @param array $user Usuario con start_date y end_date
-     * @return string 'pending', 'active', 'expired'
-     */
-    public function getCalculatedStatus($user) {
-        if ($user['role'] !== 'encuestado') {
-            return $user['status'];
-        }
-        
-        if (empty($user['start_date']) || empty($user['end_date'])) {
-            return $user['status'];
-        }
-        
-        $today = date('Y-m-d');
-        $startDate = $user['start_date'];
-        $endDate = $user['end_date'];
-        
-        if ($today < $startDate) {
-            return 'pending';  // Aún no empieza
-        } elseif ($today > $endDate) {
-            return 'expired';  // Ya terminó
-        } else {
-            return 'active';   // En período válido
-        }
     }
     
     /**
