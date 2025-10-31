@@ -34,10 +34,10 @@ return [
     'admin/businesses' => 'Admin\BusinessController@index',
     'admin/businesses/create' => 'Admin\BusinessController@create',
     'admin/businesses/store' => 'Admin\BusinessController@store',
-    'admin/businesses/show' => 'Admin\BusinessController@show',
-    'admin/businesses/edit' => 'Admin\BusinessController@edit',
+    'admin/businesses/show' => 'Admin\BusinessController@show', // Asume ID por GET (?id=X)
+    'admin/businesses/edit' => 'Admin\BusinessController@edit',   // Asume ID por GET (?id=X)
     'admin/businesses/update' => 'Admin\BusinessController@update',
-    'admin/businesses/delete' => 'Admin\BusinessController@delete',
+    'admin/businesses/delete' => 'Admin\BusinessController@delete', // Para peticiones AJAX
     
     // Gestión de Áreas de Negocio
     'admin/business-areas/{business_id}' => 'Admin\BusinessController@areas',
@@ -48,42 +48,34 @@ return [
     'admin/users' => 'Admin\UserController@index',
     'admin/users/create' => 'Admin\UserController@create',
     'admin/users/store' => 'Admin\UserController@store',
-    'admin/users/show' => 'Admin\UserController@show',
-    'admin/users/edit' => 'Admin\UserController@edit',
+    'admin/users/show' => 'Admin\UserController@show',     // Asume ID por GET (?id=X)
+    'admin/users/edit' => 'Admin\UserController@edit',     // Asume ID por GET (?id=X)
     'admin/users/update' => 'Admin\UserController@update',
-    'admin/users/delete' => 'Admin\UserController@delete',
-    'admin/users/destroy' => 'Admin\UserController@destroy',
+    'admin/users/delete' => 'Admin\UserController@delete',   // CORREGIDO: Se mantiene una sola ruta para eliminar (AJAX)
     'admin/users/toggle-status' => 'Admin\UserController@toggleStatus',
     
     // Gestión de Formularios
     'admin/forms' => 'Admin\FormController@index',
     'admin/forms/create' => 'Admin\FormController@create',
     'admin/forms/store' => 'Admin\FormController@store',
-    'admin/forms/show' => 'Admin\FormController@show',
-    'admin/forms/view' => 'Admin\FormController@show',
-    'admin/forms/edit' => 'Admin\FormController@edit',
+    'admin/forms/show' => 'Admin\FormController@show',       // Asume ID por GET (?id=X)
+    'admin/forms/edit' => 'Admin\FormController@edit',       // Asume ID por GET (?id=X)
     'admin/forms/update' => 'Admin\FormController@update',
-    'admin/forms/destroy' => 'Admin\FormController@destroy',
-    'admin/forms/delete' => 'Admin\FormController@destroy',
+    'admin/forms/destroy' => 'Admin\FormController@destroy', // CORREGIDO: Se mantiene 'destroy' como convención
     'admin/forms/duplicate' => 'Admin\FormController@duplicate',
     'admin/forms/change-status' => 'Admin\FormController@changeStatus',
     'admin/forms/publish' => 'Admin\FormController@publish',
     'admin/forms/close' => 'Admin\FormController@close',
-    'admin/forms/builder' => 'Admin\FormController@builder',
+    'admin/forms/builder' => 'Admin\FormController@builder', // Asume ID por GET (?id=X)
     'admin/forms/{id}/questions-for-linking' => 'Admin\FormController@getQuestionsForLinking',
     
     
-    // Gestión de Preguntas
+    // Gestión de Preguntas (para AJAX desde el builder)
     'admin/questions/store' => 'Admin\QuestionController@store',
-    'admin/questions/update' => 'Admin\QuestionController@update', // Corregido: sin {id}
-    'admin/questions/delete' => 'Admin\QuestionController@delete', // Corregido: sin {id}
+    'admin/questions/update' => 'Admin\QuestionController@update',
+    'admin/questions/delete' => 'Admin\QuestionController@delete',
     'admin/questions/reorder' => 'Admin\QuestionController@reorder',
-    'admin/questions/get' => 'Admin\QuestionController@get', // Añadida ruta para obtener pregunta
-    
-    // Gestión de Opciones de Preguntas (Estas rutas no se usan, se manejan en QuestionController)
-    // 'admin/question-options/store' => 'Admin\QuestionController@storeOption',
-    // 'admin/question-options/update/{id}' => 'Admin\QuestionController@updateOption',
-    // 'admin/question-options/delete/{id}' => 'Admin\QuestionController@deleteOption',
+    'admin/questions/get' => 'Admin\QuestionController@get',
     
     // Preguntas Condicionales (Padre-Hijo)
     'admin/question-children/store' => 'Admin\QuestionController@storeChild',

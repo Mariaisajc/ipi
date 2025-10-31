@@ -104,8 +104,8 @@ if ($flashData):
                         <?php foreach ($questions as $index => $question): ?>
                             <div class="question-item" data-question-id="<?= $question['id'] ?>" data-order="<?= $question['order_number'] ?>">
                                 <div class="d-flex align-items-start">
-                                    <!-- Handle para drag -->
-                                    <div class="drag-handle">
+                                    <!-- Handle para drag (deshabilitado si el form está cerrado) -->
+                                    <div class="drag-handle" <?= $form['status'] === 'closed' ? 'style="cursor: not-allowed;"' : '' ?>>
                                         <i class="bi bi-grip-vertical fs-4"></i>
                                     </div>
                                     
@@ -121,20 +121,23 @@ if ($flashData):
                                                     <span class="badge bg-danger question-type-badge">Obligatoria</span>
                                                 <?php endif; ?>
                                             </div>
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" 
-                                                        class="btn btn-outline-primary btn-sm"
-                                                        onclick="editQuestion(<?= $question['id'] ?>)"
-                                                        title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button type="button" 
-                                                        class="btn btn-outline-danger btn-sm"
-                                                        onclick="deleteQuestion(<?= $question['id'] ?>)"
-                                                        title="Eliminar">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
+                                            <!-- Ocultar botones de acción si el form está cerrado -->
+                                            <?php if ($form['status'] !== 'closed'): ?>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" 
+                                                            class="btn btn-outline-primary btn-sm"
+                                                            onclick="editQuestion(<?= $question['id'] ?>)"
+                                                            title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            onclick="deleteQuestion(<?= $question['id'] ?>)"
+                                                            title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                         
                                         <p class="mb-1 fw-semibold"><?= e($question['question_text']) ?></p>
@@ -177,31 +180,42 @@ if ($flashData):
     <!-- Sidebar - Tipos de Preguntas -->
     <div class="col-lg-4">
         <div class="builder-sidebar">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        Agregar Pregunta
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small mb-3">
-                        Selecciona el tipo de pregunta que deseas agregar:
-                    </p>
-                    
-                    <div class="row g-3">
-                        <?php foreach ($questionTypes as $type): ?>
-                            <div class="col-6">
-                                <div class="type-selector" 
-                                     onclick="openAddQuestionModal('<?= $type['name'] ?>', <?= $type['id'] ?>, '<?= e($type['description']) ?>', '')">
-                                    <i class="bi bi-<?= getQuestionIcon($type['name']) ?> d-block"></i>
-                                    <span class="type-name"><?= e($type['description']) ?></span>
+            <!-- Deshabilitar panel de agregar pregunta si el formulario está cerrado -->
+            <?php if ($form['status'] !== 'closed'): ?>
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Agregar Pregunta
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Selecciona el tipo de pregunta que deseas agregar:
+                        </p>
+                        
+                        <div class="row g-3">
+                            <?php foreach ($questionTypes as $type): ?>
+                                <div class="col-6">
+                                    <div class="type-selector" 
+                                         onclick="openAddQuestionModal('<?= $type['name'] ?>', <?= $type['id'] ?>, '<?= e($type['description']) ?>', '')">
+                                        <i class="bi bi-<?= getQuestionIcon($type['name']) ?> d-block"></i>
+                                        <span class="type-name"><?= e($type['description']) ?></span>
+                                    </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
-            </div>
+            <?php else: ?>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-lock-fill fs-1 text-muted"></i>
+                        <h6 class="mt-3">Formulario Cerrado</h6>
+                        <p class="small text-muted mb-0">Este formulario ya no puede ser modificado.</p>
+                    </div>
+                </div>
+            <?php endif; ?>
             
             <!-- Información -->
             <div class="card mt-3">
@@ -336,6 +350,70 @@ if ($flashData):
                     Sí, Eliminar
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Publicación de Formulario (MODIFICADO) -->
+<div class="modal fade" id="publishFormModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- FORMULARIO PARA PUBLICAR (AÑADIR ID) -->
+            <form action="<?= url('admin/forms/publish') ?>" method="POST" id="publishForm">
+                <?= (new CSRF())->field() ?>
+                <input type="hidden" name="id" value="<?= $form['id'] ?>">
+
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Confirmar Publicación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea activar este formulario?</p>
+                    <p class="small text-muted">Una vez publicado, el formulario estará activo para ser asignado y ya no podrá ser eliminado si recibe respuestas.</p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="confirmPublishBtn" style="background-color: #5a6c57; border-color: #5a6c57;">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Sí, Publicar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Cierre de Formulario -->
+<div class="modal fade" id="closeFormModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- FORMULARIO PARA CERRAR -->
+            <form action="<?= url('admin/forms/close') ?>" method="POST" id="closeForm">
+                <?= (new CSRF())->field() ?>
+                <input type="hidden" name="id" value="<?= $form['id'] ?>">
+
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">
+                        <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                        Confirmar Cierre
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea cerrar este formulario?</p>
+                    <p class="small text-muted">Una vez cerrado, el formulario ya no aceptará nuevas respuestas y no podrá ser modificado.</p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger" id="confirmCloseBtn">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Sí, Cerrar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

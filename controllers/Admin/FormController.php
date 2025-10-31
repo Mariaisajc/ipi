@@ -340,90 +340,91 @@ class FormController extends Controller {
     }
     
     /**
-     * Publicar formulario (AJAX)
+     * Publicar formulario (MODIFICADO para envío de formulario normal)
      */
     public function publish() {
-        if (!$this->auth->check()) {
-            $this->json(['success' => false, 'message' => 'No autenticado']);
+        if (!$this->isPost()) {
+            $this->redirect('admin/forms');
             return;
         }
-        
+
         $this->validateCSRF();
-        
         $id = $this->input('id');
-        
+
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID no válido']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'ID de formulario no válido.'];
+            $this->redirect('admin/forms');
             return;
         }
-        
-        $form = $this->formModel->getById($id);
-        
+
+        // --- CORRECCIÓN ---
+        // El método correcto es 'getByIdWithDetails', no 'getById'.
+        $form = $this->formModel->getByIdWithDetails($id);
         if (!$form) {
-            $this->json(['success' => false, 'message' => 'Formulario no encontrado']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formulario no encontrado.'];
+            $this->redirect('admin/forms');
             return;
         }
-        
-        // Verificar que tenga preguntas
+
         if (!$this->formModel->hasQuestions($id)) {
-            $this->json([
-                'success' => false, 
-                'message' => 'El formulario debe tener al menos una pregunta para ser publicado'
-            ]);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'El formulario debe tener al menos una pregunta para ser publicado.'];
+            $this->redirect('admin/forms/builder?id=' . $id);
             return;
         }
-        
-        // Publicar
+
         if ($this->formModel->publish($id)) {
-            $this->json([
-                'success' => true, 
-                'message' => 'Formulario publicado exitosamente. Ahora está disponible para asignar.'
-            ]);
+            $_SESSION['flash'] = [
+                'type' => 'success', 
+                'message' => '¡Formulario publicado! Ahora está activo y listo para asignar a usuarios.'
+            ];
         } else {
-            $this->json([
-                'success' => false, 
-                'message' => 'Error al publicar el formulario'
-            ]);
+            $_SESSION['flash'] = [
+                'type' => 'error', 
+                'message' => 'Error al intentar publicar el formulario en la base de datos.'
+            ];
         }
+        
+        $this->redirect('admin/forms');
     }
     
     /**
-     * Cerrar formulario (AJAX)
+     * Cerrar formulario (MODIFICADO para envío de formulario normal)
      */
     public function close() {
-        if (!$this->auth->check()) {
-            $this->json(['success' => false, 'message' => 'No autenticado']);
+        if (!$this->isPost()) {
+            $this->redirect('admin/forms');
             return;
         }
-        
+
         $this->validateCSRF();
-        
         $id = $this->input('id');
-        
+
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID no válido']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'ID de formulario no válido.'];
+            $this->redirect('admin/forms');
             return;
         }
-        
-        $form = $this->formModel->getById($id);
-        
+
+        $form = $this->formModel->getByIdWithDetails($id);
         if (!$form) {
-            $this->json(['success' => false, 'message' => 'Formulario no encontrado']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formulario no encontrado.'];
+            $this->redirect('admin/forms');
             return;
         }
-        
-        // Cerrar
+
         if ($this->formModel->close($id)) {
-            $this->json([
-                'success' => true, 
-                'message' => 'Formulario cerrado. Ya no acepta nuevas respuestas.'
-            ]);
+            $_SESSION['flash'] = [
+                'type' => 'success', 
+                'message' => 'El formulario ha sido cerrado y ya no acepta nuevas respuestas.'
+            ];
         } else {
-            $this->json([
-                'success' => false, 
-                'message' => 'Error al cerrar el formulario'
-            ]);
+            $_SESSION['flash'] = [
+                'type' => 'error', 
+                'message' => 'Error al intentar cerrar el formulario.'
+            ];
         }
+        
+        $this->redirect('admin/forms');
     }
     
     /**

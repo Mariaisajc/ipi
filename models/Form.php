@@ -107,6 +107,7 @@ class Form extends Model {
      * Publicar formulario (cambiar a estado active)
      */
     public function publish($id) {
+        // CORRECCIÓN: El orden correcto es ($id, $status)
         return $this->updateStatus($id, 'active');
     }
     
@@ -114,6 +115,7 @@ class Form extends Model {
      * Cerrar formulario (no acepta más respuestas)
      */
     public function close($id) {
+        // CORRECCIÓN: El orden correcto es ($id, $status)
         return $this->updateStatus($id, 'closed');
     }
     

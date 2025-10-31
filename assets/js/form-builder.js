@@ -7,8 +7,10 @@
 let formId;
 let csrfToken;
 let questionModal;
-let deleteQuestionModal; // <-- NUEVO: Variable para el modal de eliminación
-let questionIdToDelete = null; // <-- NUEVO: ID de la pregunta a eliminar
+let deleteQuestionModal;
+let publishFormModal;
+let closeFormModal; // <-- AÑADIR ESTA LÍNEA
+let questionIdToDelete = null;
 let currentQuestionType = null;
 let optionCounter = 0;
 // Almacena las preguntas disponibles para la lógica condicional
@@ -34,6 +36,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (deleteModalElement) {
         deleteQuestionModal = new bootstrap.Modal(deleteModalElement);
         document.getElementById('confirmDeleteQuestionBtn').addEventListener('click', performDeleteQuestion);
+    }
+
+    // --- BLOQUE CORREGIDO ---
+    // Inicializar el modal de publicación y escuchar el evento SUBMIT del formulario
+    const publishModalElement = document.getElementById('publishFormModal');
+    if (publishModalElement) {
+        publishFormModal = new bootstrap.Modal(publishModalElement);
+        
+        // Escuchar el evento 'submit' del formulario, no el 'click' del botón
+        const publishFormElement = document.getElementById('publishForm');
+        if (publishFormElement) {
+            publishFormElement.addEventListener('submit', performPublishForm);
+        }
+    }
+    // --- FIN DEL BLOQUE CORREGIDO ---
+
+    const closeModalElement = document.getElementById('closeFormModal');
+    if (closeModalElement) {
+        closeFormModal = new bootstrap.Modal(closeModalElement);
+        // Escuchar el evento 'submit' del formulario, no el 'click' del botón
+        const closeFormElement = document.getElementById('closeForm');
+        if (closeFormElement) {
+            closeFormElement.addEventListener('submit', performCloseForm);
+        }
     }
     
     const questionsList = document.getElementById('questions-list');
@@ -77,6 +103,53 @@ function updateQuestionsOrder() {
     }).then(res => res.json()).then(data => {
         if (!data.success) console.error('Error al actualizar orden:', data.message);
     }).catch(err => console.error('Error en la petición de reordenar:', err));
+}
+
+// --- GESTIÓN DE ESTADO DEL FORMULARIO ---
+
+/**
+ * Abre el modal de confirmación para publicar el formulario.
+ */
+function publishForm() {
+    if (publishFormModal) {
+        publishFormModal.show();
+    }
+}
+
+/**
+ * Se ejecuta en el evento 'submit' del formulario de publicación.
+ * Deshabilita el botón para prevenir envíos múltiples.
+ */
+function performPublishForm() {
+    // Esta función ahora se ejecuta cuando el formulario YA se está enviando.
+    const publishButton = document.getElementById('confirmPublishBtn');
+    if (publishButton) {
+        publishButton.disabled = true;
+        publishButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Publicando...';
+    }
+    // No se necesita nada más, el navegador completará el envío del formulario.
+}
+
+/**
+ * Abre el modal de confirmación para cerrar el formulario.
+ */
+function closeForm() {
+    if (closeFormModal) {
+        closeFormModal.show();
+    }
+}
+
+/**
+ * Ejecuta el cierre del formulario después de la confirmación.
+ */
+function performCloseForm() {
+    // Esta función ahora se ejecuta cuando el formulario YA se está enviando.
+    const closeButton = document.getElementById('confirmCloseBtn');
+    if (closeButton) {
+        closeButton.disabled = true;
+        closeButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cerrando...';
+    }
+    // No se necesita nada más, el navegador completará el envío del formulario.
 }
 
 // --- GESTIÓN DEL MODAL DE PREGUNTA ---
