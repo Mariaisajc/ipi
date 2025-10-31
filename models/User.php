@@ -390,4 +390,32 @@ class User extends Model {
         
         return !empty($result) ? $result[0] : null;
     }
+
+    /**
+     * Obtener todos los usuarios por un rol específico
+     */
+    public function getUsersByRole($role) {
+        $sql = "SELECT id, name, email, business_id FROM users WHERE role = ? AND status = 'active' ORDER BY name ASC";
+        return $this->query($sql, [$role]);
+    }
+
+    /**
+     * Obtener todos los usuarios por rol, sin importar su estado
+     */
+    public function getAllUsersByRole($role) {
+        $sql = "SELECT id, name, email, status FROM users WHERE role = ? ORDER BY name ASC";
+        return $this->query($sql, [$role]);
+    }
+
+    /**
+     * Obtener los usuarios que ya están asignados a un formulario
+     */
+    public function getAssignedUsersByForm($formId) {
+        $sql = "SELECT u.id, u.name, u.email 
+                FROM users u
+                INNER JOIN user_forms uf ON u.id = uf.user_id
+                WHERE uf.form_id = ?
+                ORDER BY u.name ASC";
+        return $this->query($sql, [$formId]);
+    }
 }

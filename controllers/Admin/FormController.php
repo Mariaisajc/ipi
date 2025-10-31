@@ -154,7 +154,7 @@ class FormController extends Controller {
     }
     
     /**
-     * Mostrar formulario de edición
+     * Mostrar formulario de edición (Asignación de Usuarios)
      */
     public function edit() {
         if (!$this->auth->check()) {
@@ -163,91 +163,93 @@ class FormController extends Controller {
         }
         
         $id = $this->input('id');
-        
         if (!$id) {
             $this->redirect('admin/forms');
             return;
         }
         
-        $form = $this->formModel->getById($id);
-        
+        $form = $this->formModel->getByIdWithDetails($id);
         if (!$form) {
-            $_SESSION['flash'] = [
-                'type' => 'error',
-                'message' => 'Formulario no encontrado'
-            ];
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Formulario no encontrado'];
             $this->redirect('admin/forms');
             return;
         }
-        
+
+        // --- NUEVA VALIDACIÓN ---
+        // No se puede editar/asignar si el formulario está cerrado.
+        if ($form['status'] === 'closed') {
+            $_SESSION['flash'] = ['type' => 'warning', 'message' => 'No se pueden asignar usuarios a un formulario cerrado.'];
+            $this->redirect('admin/forms/show?id=' . $id);
+            return;
+        }
+
+        // Cargar el modelo de usuario si no existe
+        if (!isset($this->userModel)) {
+            $this->userModel = $this->model('User');
+        }
+
+        // --- CAMBIO DE MÉTODO ---
+        // Obtener TODOS los usuarios 'encuestados' y los que ya están asignados a este formulario
+        $availableUsers = $this->userModel->getAllUsersByRole('encuestado');
+        $assignedUsers = $this->userModel->getAssignedUsersByForm($id);
+        $assignedUserIds = array_column($assignedUsers, 'id');
+
         $this->view('admin/forms/edit', [
-            'title' => 'Editar Formulario',
-            'form' => $form
+            'title' => 'Asignar Usuarios al Formulario',
+            'form' => $form,
+            'availableUsers' => $availableUsers,
+            'assignedUserIds' => $assignedUserIds
         ],'admin');
     }
     
     /**
-     * Actualizar formulario
+     * Actualizar asignaciones de usuarios
      */
     public function update() {
-        if (!$this->auth->check()) {
-            $this->redirect('auth/login');
+        if (!$this->isPost()) {
+            $this->redirect('admin/forms');
             return;
         }
         
         $this->validateCSRF();
         
-        $id = $this->input('id');
-        
-        if (!$id) {
-            $this->redirect('admin/forms');
+        $formId = $this->input('form_id');
+        $title = trim($this->input('title')); // <-- NUEVO
+        $selectedUserIds = $this->input('user_ids') ?? [];
+
+        if (!$formId || empty($title)) { // <-- MODIFICADO
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'El ID y el título del formulario son obligatorios.'];
+            $this->redirect($formId ? 'admin/forms/edit?id=' . $formId : 'admin/forms');
             return;
         }
-        
-        $form = $this->formModel->getById($id);
-        
-        if (!$form) {
+
+        // Cargar el modelo de usuario si no existe
+        if (!isset($this->userModel)) {
+            $this->userModel = $this->model('User');
+        }
+
+        try {
+            // --- NUEVA LÓGICA ---
+            // 1. Actualizar el título del formulario
+            $this->formModel->update($formId, ['title' => $title]);
+
+            // 2. Sincronizar usuarios
+            $this->formModel->syncAssignedUsers($formId, $selectedUserIds, $this->auth->user()['id']);
+
+            $_SESSION['flash'] = [
+                'type' => 'success',
+                'message' => 'Formulario y asignaciones actualizadas correctamente.'
+            ];
+
+        } catch (Exception $e) {
             $_SESSION['flash'] = [
                 'type' => 'error',
-                'message' => 'Formulario no encontrado'
+                'message' => 'Ocurrió un error al actualizar las asignaciones: ' . $e->getMessage()
             ];
-            $this->redirect('admin/forms');
-            return;
         }
         
-        // Validaciones
-        $errors = [];
-        
-        $title = trim($this->input('title'));
-        $description = trim($this->input('description'));
-        
-        if (empty($title)) {
-            $errors[] = 'El título es obligatorio';
-        } elseif (strlen($title) > 100) {
-            $errors[] = 'El título no puede exceder 100 caracteres';
-        }
-        
-        if ($errors) {
-            $_SESSION['flash'] = [
-                'type' => 'error',
-                'message' => implode('<br>', $errors)
-            ];
-            $this->redirect('admin/forms/edit/' . $id);
-            return;
-        }
-        
-        // Actualizar
-        $this->formModel->update($id, [
-            'title' => $title,
-            'description' => $description
-        ]);
-        
-        $_SESSION['flash'] = [
-            'type' => 'success',
-            'message' => 'Formulario actualizado exitosamente'
-        ];
-        
-        $this->redirect('admin/forms/view/' . $id);
+        // Redirigir de vuelta a la página de asignación
+        $this->redirect('admin/forms/edit?id=' . $formId);
     }
     
     /**

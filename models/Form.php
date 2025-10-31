@@ -75,20 +75,30 @@ class Form extends Model {
     }
     
     /**
-     * Actualizar formulario
+     * Actualizar formulario (MODIFICADO para ser más flexible)
      */
     public function update($id, $data) {
-        $sql = "UPDATE {$this->table} 
-                SET title = ?, 
-                    description = ?,
-                    updated_at = NOW()
-                WHERE id = ?";
+        $fields = [];
+        $params = [];
+
+        if (isset($data['title'])) {
+            $fields[] = "title = ?";
+            $params[] = $data['title'];
+        }
+        if (isset($data['description'])) {
+            $fields[] = "description = ?";
+            $params[] = $data['description'];
+        }
+
+        if (empty($fields)) {
+            return true; // No hay nada que actualizar
+        }
+
+        $fields[] = "updated_at = NOW()";
+        $sql = "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ?";
+        $params[] = $id;
         
-        return $this->query($sql, [
-            $data['title'],
-            $data['description'] ?? null,
-            $id
-        ]);
+        return $this->query($sql, $params);
     }
     
     /**
@@ -232,5 +242,43 @@ class Form extends Model {
                 ORDER BY f.created_at DESC";
         
         return $this->query($sql, ['%' . $searchTerm . '%']);
+    }
+    
+    /**
+     * Sincroniza los usuarios asignados a un formulario.
+     * Asigna los nuevos y desasigna los que ya no están seleccionados.
+     */
+    public function syncAssignedUsers($formId, $selectedUserIds, $adminId) {
+        $db = Model::getDbConnection();
+        
+        // Obtener los usuarios actualmente asignados
+        $sql_current = "SELECT user_id FROM user_forms WHERE form_id = ?";
+        $currentAssignments = $this->query($sql_current, [$formId], $db);
+        $currentUserIds = array_column($currentAssignments, 'user_id');
+        
+        // 1. Usuarios a asignar (los que están en 'selected' pero no en 'current')
+        $usersToAssign = array_diff($selectedUserIds, $currentUserIds);
+        if (!empty($usersToAssign)) {
+            $sql_assign = "INSERT INTO user_forms (form_id, user_id, assigned_by) VALUES ";
+            $params = [];
+            $rows = [];
+            foreach ($usersToAssign as $userId) {
+                $rows[] = "(?, ?, ?)";
+                array_push($params, $formId, $userId, $adminId);
+            }
+            $sql_assign .= implode(', ', $rows);
+            $this->query($sql_assign, $params, $db);
+        }
+        
+        // 2. Usuarios a desasignar (los que están en 'current' pero no en 'selected')
+        $usersToUnassign = array_diff($currentUserIds, $selectedUserIds);
+        if (!empty($usersToUnassign)) {
+            $placeholders = implode(',', array_fill(0, count($usersToUnassign), '?'));
+            $sql_unassign = "DELETE FROM user_forms WHERE form_id = ? AND user_id IN ($placeholders)";
+            $params = array_merge([$formId], $usersToUnassign);
+            $this->query($sql_unassign, $params, $db);
+        }
+        
+        return true;
     }
 }

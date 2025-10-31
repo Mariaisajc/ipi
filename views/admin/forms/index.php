@@ -126,7 +126,7 @@ if ($flashData):
                                 
                                 <!-- Título -->
                                 <td>
-                                    <a href="<?= url('admin/forms/view?id=' . $form['id']) ?>" 
+                                    <a href="<?= url('admin/forms/show?id=' . $form['id']) ?>" 
                                        class="text-decoration-none fw-semibold">
                                         <?= e($form['title']) ?>
                                     </a>
@@ -204,7 +204,7 @@ if ($flashData):
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- Ver -->
-                                        <a href="<?= url('admin/forms/view?id=' . $form['id']) ?>" 
+                                        <a href="<?= url('admin/forms/show?id=' . $form['id']) ?>" 
                                            class="btn btn-outline-primary"
                                            title="Ver detalle">
                                             <i class="bi bi-eye"></i>
@@ -217,12 +217,14 @@ if ($flashData):
                                             <i class="bi bi-tools"></i>
                                         </a>
                                         
-                                        <!-- Editar -->
-                                        <a href="<?= url('admin/forms/edit?id=' . $form['id']) ?>" 
-                                           class="btn btn-outline-warning"
-                                           title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+                                        <!-- Editar (solo si no está cerrado) -->
+                                        <?php if ($form['status'] !== 'closed'): ?>
+                                            <a href="<?= url('admin/forms/edit?id=' . $form['id']) ?>" 
+                                               class="btn btn-outline-warning"
+                                               title="Asignar Usuarios y Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        <?php endif; ?>
                                         
                                         <!-- Duplicar -->
                                         <button type="button" 
