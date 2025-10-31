@@ -253,13 +253,49 @@ class Form extends Model {
     public function search($searchTerm) {
         $sql = "SELECT f.*, 
                        u.login as creator_login,
-                       (SELECT COUNT(*) FROM questions WHERE form_id = f.id) as question_count
+                       u.name as creator_name,
+                       (SELECT COUNT(*) FROM questions WHERE form_id = f.id) as question_count,
+                       (SELECT COUNT(*) FROM user_forms WHERE form_id = f.id) as assignment_count,
+                       (SELECT COUNT(*) FROM responses WHERE form_id = f.id AND status = 'completed') as response_count
                 FROM {$this->table} f
                 LEFT JOIN users u ON f.created_by = u.id
                 WHERE f.title LIKE ?
                 ORDER BY f.created_at DESC";
         
         return $this->query($sql, ['%' . $searchTerm . '%']);
+    }
+    
+    /**
+     * NUEVO: Filtrar formularios por múltiples criterios (búsqueda y/o estado)
+     */
+    public function filter($filters) {
+        $sql = "SELECT f.*, 
+                       u.login as creator_login,
+                       u.name as creator_name,
+                       (SELECT COUNT(*) FROM questions WHERE form_id = f.id) as question_count,
+                       (SELECT COUNT(*) FROM user_forms WHERE form_id = f.id) as assignment_count,
+                       (SELECT COUNT(*) FROM responses WHERE form_id = f.id AND status = 'completed') as response_count
+                FROM {$this->table} f
+                LEFT JOIN users u ON f.created_by = u.id
+                WHERE 1=1";
+        
+        $params = [];
+        
+        // Filtro por término de búsqueda
+        if (!empty($filters['search'])) {
+            $sql .= " AND f.title LIKE ?";
+            $params[] = '%' . $filters['search'] . '%';
+        }
+        
+        // Filtro por estado
+        if (!empty($filters['status'])) {
+            $sql .= " AND f.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        $sql .= " ORDER BY f.created_at DESC";
+        
+        return $this->query($sql, $params);
     }
     
     /**

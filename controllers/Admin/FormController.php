@@ -27,15 +27,17 @@ class FormController extends Controller {
             return;
         }
         
-        // Obtener filtros
+        // Obtener filtros (siempre ambos)
         $status = $this->input('status');
         $search = $this->input('search');
         
-        // Obtener formularios
-        if ($search) {
-            $forms = $this->formModel->search($search);
-        } elseif ($status) {
-            $forms = $this->formModel->getByStatus($status);
+        $filters = [];
+        if ($search) $filters['search'] = $search;
+        if ($status) $filters['status'] = $status;
+        
+        // Usar el nuevo método de filtrado unificado
+        if (!empty($filters)) {
+            $forms = $this->formModel->filter($filters);
         } else {
             $forms = $this->formModel->getAllWithCreator();
         }
@@ -253,36 +255,40 @@ class FormController extends Controller {
     }
     
     /**
-     * Eliminar formulario
+     * Eliminar formulario (MODIFICADO con nuevas reglas)
      */
     public function destroy() {
-        if (!$this->auth->check()) {
-            $this->json(['success' => false, 'message' => 'No autenticado']);
+        if (!$this->isAjax() || !$this->auth->check()) {
+            $this->json(['success' => false, 'message' => 'Acceso no permitido'], 403);
             return;
         }
         
-        $this->validateCSRF();
-        
-        $id = $this->input('id');
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
+
+        if (!$this->csrf->validate($input['csrf_token'] ?? '')) {
+            $this->json(['success' => false, 'message' => 'Error de seguridad (CSRF).'], 403);
+            return;
+        }
         
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID no válido']);
+            $this->json(['success' => false, 'message' => 'ID de formulario no válido.'], 400);
             return;
         }
         
-        $form = $this->formModel->getById($id);
+        $form = $this->formModel->getByIdWithDetails($id);
         
         if (!$form) {
-            $this->json(['success' => false, 'message' => 'Formulario no encontrado']);
+            $this->json(['success' => false, 'message' => 'Formulario no encontrado.'], 404);
             return;
         }
         
-        // Verificar si puede eliminarse
-        if (!$this->formModel->canDelete($id)) {
+        // Validar las condiciones para eliminar
+        if ($form['status'] !== 'draft' || $form['assignment_count'] > 0) {
             $this->json([
                 'success' => false, 
-                'message' => 'No se puede eliminar el formulario porque tiene respuestas registradas'
-            ]);
+                'message' => 'No se puede eliminar. Solo se permiten formularios en estado "Borrador" y sin usuarios asignados.'
+            ], 409); // 409 Conflict
             return;
         }
         
@@ -290,13 +296,13 @@ class FormController extends Controller {
         if ($this->formModel->delete($id)) {
             $this->json([
                 'success' => true, 
-                'message' => 'Formulario eliminado exitosamente'
+                'message' => 'Formulario eliminado exitosamente.'
             ]);
         } else {
             $this->json([
                 'success' => false, 
-                'message' => 'Error al eliminar el formulario'
-            ]);
+                'message' => 'Error al eliminar el formulario de la base de datos.'
+            ], 500);
         }
     }
     

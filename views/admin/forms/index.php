@@ -14,7 +14,8 @@ $pageTitle = $title ?? 'Formularios';
         </h1>
         <p class="text-muted mb-0">Gestiona los formularios de evaluación</p>
     </div>
-    <a href="<?= url('admin/forms/create') ?>" class="btn btn-primary">
+    <!-- MODIFICADO: Cambiar color del botón a verde olivo corporativo -->
+    <a href="<?= url('admin/forms/create') ?>" class="btn btn-success" style="background-color: #5a6c57; border-color: #5a6c57;">
         <i class="bi bi-plus-circle me-1"></i>
         Crear Formulario
     </a>
@@ -35,22 +36,25 @@ if ($flashData):
 <!-- Filtros y Búsqueda -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" action="<?= url('admin/forms') ?>" class="row g-3">
+        <!-- MODIFICADO: Añadir ID al formulario para el JavaScript -->
+        <form method="GET" action="<?= url('admin/forms') ?>" id="filterForm" class="row g-3">
             <!-- Búsqueda -->
-            <div class="col-md-5">
+            <div class="col-md-6"> <!-- MODIFICADO: Aumentar ancho del buscador -->
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <!-- CORREGIDO: Comentario movido fuera de la etiqueta input -->
                     <input type="text" 
                            class="form-control" 
                            name="search" 
+                           id="searchInput"
                            placeholder="Buscar por título..." 
                            value="<?= e($searchTerm ?? '') ?>">
                 </div>
             </div>
             
             <!-- Filtro por estado -->
-            <div class="col-md-4">
-                <select class="form-select" name="status" onchange="this.form.submit()">
+            <div class="col-md-4"> <!-- MODIFICADO: Aumentar ancho del filtro -->
+                <select class="form-select" name="status" id="statusFilter"> <!-- MODIFICADO: Quitar onchange y añadir ID -->
                     <option value="">Todos los estados</option>
                     <option value="draft" <?= ($currentStatus ?? '') === 'draft' ? 'selected' : '' ?>>
                         Borradores
@@ -65,13 +69,10 @@ if ($flashData):
             </div>
             
             <!-- Botones -->
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-outline-primary">
-                    <i class="bi bi-funnel me-1"></i>
-                    Filtrar
-                </button>
+            <div class="col-md-2"> <!-- MODIFICADO: Ajustar ancho -->
+                <!-- ELIMINADO: El botón "Filtrar" ya no es necesario -->
                 <?php if ($searchTerm || $currentStatus): ?>
-                    <a href="<?= url('admin/forms') ?>" class="btn btn-outline-secondary">
+                    <a href="<?= url('admin/forms') ?>" class="btn btn-outline-secondary w-100">
                         <i class="bi bi-x-circle me-1"></i>
                         Limpiar
                     </a>
@@ -234,8 +235,8 @@ if ($flashData):
                                             <i class="bi bi-files"></i>
                                         </button>
                                         
-                                        <!-- Eliminar -->
-                                        <?php if ($form['response_count'] == 0): ?>
+                                        <!-- Eliminar (MODIFICADO con nuevas reglas) -->
+                                        <?php if ($form['status'] === 'draft' && $form['assignment_count'] == 0): ?>
                                             <button type="button" 
                                                     class="btn btn-outline-danger"
                                                     onclick="deleteForm(<?= $form['id'] ?>, '<?= e($form['title']) ?>')"
@@ -327,6 +328,31 @@ if ($flashData):
 </div>
 
 <script>
+// NUEVO: Script para filtros automáticos (CORREGIDO)
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filterForm');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    let searchTimeout;
+
+    function performFilter() {
+        const searchValue = searchInput.value;
+        const statusValue = statusFilter.value;
+        // Construir la URL manualmente para asegurar que los valores se envíen
+        window.location.href = `<?= url('admin/forms') ?>?search=${encodeURIComponent(searchValue)}&status=${encodeURIComponent(statusValue)}`;
+    }
+
+    // Auto-submit al escribir en el buscador (con retardo)
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performFilter, 500); // Espera 500ms
+    });
+
+    // Auto-submit al cambiar el filtro de estado
+    statusFilter.addEventListener('change', performFilter);
+});
+
 // CSRF Token
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
@@ -417,14 +443,21 @@ function deleteForm(formId, formTitle) {
     modal.show();
 }
 
-// Confirmar eliminación
+// Confirmar eliminación (MODIFICADO con Toast y manejo de errores)
 document.getElementById('confirmDelete').addEventListener('click', function() {
     if (!formIdToDelete) return;
+
+    const button = this;
+    const originalButtonText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
     
     fetch('<?= url('admin/forms/destroy') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
             id: formIdToDelete,
@@ -433,19 +466,33 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
     })
     .then(response => response.json())
     .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        
         if (data.success) {
-            alert(data.message);
-            location.reload();
+            // Mostrar Toast de éxito y recargar
+            const toastElement = document.getElementById('notificationToast');
+            const toastBody = document.getElementById('notificationToastBody');
+            toastBody.textContent = data.message;
+            
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+
         } else {
-            alert('Error: ' + data.message);
+            alert('Error: ' + (data.message || 'No se pudo eliminar el formulario.'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al eliminar el formulario');
+        alert('Error de red al eliminar el formulario.');
     })
     .finally(() => {
-        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        // Restaurar botón en caso de que algo falle y no se recargue
+        button.disabled = false;
+        button.innerHTML = originalButtonText;
     });
 });
 </script>
