@@ -85,6 +85,9 @@
     
     <!-- Footer -->
     <?php require VIEWS_PATH . '/layouts/partials/admin/footer.php'; ?>
+
+    <!-- MODAL DE INFORMACIÓN GENÉRICO -->
+    <?php require VIEWS_PATH . '/layouts/partials/admin/info_modal.php'; ?>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -100,6 +103,36 @@
     
     <!-- Logout Modal JS -->
     <script src="<?= asset('js/logout.js') ?>"></script>
+
+    <!-- SCRIPT PARA ACTIVAR MODAL DE INFORMACIÓN -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        <?php 
+        $flashData = $_SESSION['flash'] ?? null;
+        if ($flashData && str_starts_with($flashData['type'], 'modal-')): 
+            unset($_SESSION['flash']);
+            $modalType = str_replace('modal-', '', $flashData['type']); // 'danger', 'warning', etc.
+            $message = addslashes($flashData['message']);
+            
+            $title = 'Atención';
+            $icon = 'bi-exclamation-circle';
+            $headerClass = 'bg-warning text-dark';
+
+            if ($modalType === 'danger') {
+                $title = 'Acción no permitida';
+                $icon = 'bi-shield-slash-fill';
+                $headerClass = 'bg-danger text-white';
+            }
+        ?>
+            const infoModal = new bootstrap.Modal(document.getElementById('infoModal'));
+            document.getElementById('infoModalTitle').innerText = '<?= $title ?>';
+            document.getElementById('infoModalMessage').innerText = '<?= $message ?>';
+            document.getElementById('infoModalIcon').className = 'bi me-2 <?= $icon ?>';
+            document.getElementById('infoModalHeader').className = 'modal-header border-0 <?= $headerClass ?>';
+            infoModal.show();
+        <?php endif; ?>
+    });
+    </script>
     
     <!-- JS Adicionales (opcional) -->
     <?php if (isset($additionalJS)): ?>

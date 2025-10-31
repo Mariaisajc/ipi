@@ -290,10 +290,12 @@ class UserController extends Controller {
     public function update() {
         if (!$this->isPost()) {
             $this->redirect('/admin/users');
+            return;
         }
 
         $id = $this->input('id');
         $user = $this->userModel->getById($id);
+        $errors = [];
 
         // Validaciones
         $login = $this->input('login');
@@ -305,74 +307,80 @@ class UserController extends Controller {
         // Validar login
         if (empty($login)) {
             $errors[] = 'El login es obligatorio';
-        } elseif (strlen($login) < 3) {
-            $errors[] = 'El login debe tener al menos 3 caracteres';
-        } elseif (!preg_match('/^[a-z0-9_]+$/', $login)) {
-            $errors[] = 'El login solo puede contener minúsculas, números y guión bajo (_)';
         } elseif ($this->userModel->loginExists($login, $id)) {
             $errors[] = 'El login ya está en uso';
         }
         
-        // Validar email (OBLIGATORIO)
+        // Validar email
         if (empty($email)) {
             $errors[] = 'El email es obligatorio';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'El email no es válido';
         } elseif ($this->userModel->emailExists($email, $id)) {
             $errors[] = 'El email ya está en uso';
         }
         
         // Validar contraseña si se proporciona
-        if (!empty($password)) {
-            if (strlen($password) < 6) {
-                $errors[] = 'La contraseña debe tener al menos 6 caracteres';
-            } elseif ($password !== $password_confirm) {
-                $errors[] = 'Las contraseñas no coinciden';
-            }
-        }
-        
-        // No permitir cambiar el rol
-        // No actualizar el estado si es encuestado (se gestiona por fechas)
-        if ($user['role'] === 'admin') {
-            // Regla #5: Proteger al super admin de ser inactivado
-            if ($id == 1 && $this->input('status') === 'inactive') {
-                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'El administrador principal no puede ser inactivado.'];
-                $this->redirect('/admin/users/edit/' . $id);
-                return;
-            }
-            $data['status'] = $this->input('status');
+        if (!empty($password) && $password !== $password_confirm) {
+            $errors[] = 'Las contraseñas no coinciden';
         }
 
+        if (!empty($errors)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'message' => implode('<br>', $errors)];
+            $this->redirect('/admin/users/edit?id=' . $id); // CORREGIDO
+            return;
+        }
+        
+        // --- LÓGICA CORREGIDA Y MEJORADA ---
         $data = [
             'login' => $login,
             'name' => $name,
             'email' => $email,
         ];
-        
-        if (!empty($this->input('password'))) {
-            $data['password'] = $this->userModel->hashPassword($this->input('password'));
+
+        if ($user['role'] === 'admin') {
+            $newStatus = $this->input('status');
+            
+            // Regla: Proteger al super admin de ser inactivado
+            if ($id == 1 && $newStatus === 'inactive') {
+                $_SESSION['flash'] = ['type' => 'modal-danger', 'message' => 'El administrador principal no puede ser inactivado.'];
+                $this->redirect('/admin/users/edit?id=' . $id); // CORREGIDO
+                return;
+            }
+
+            // Regla: Un admin no puede inactivarse a sí mismo
+            if ($id == $this->auth->user()['id'] && $newStatus === 'inactive') {
+                $_SESSION['flash'] = ['type' => 'modal-danger', 'message' => 'No puedes inactivar tu propia cuenta.'];
+                $this->redirect('/admin/users/edit?id=' . $id); // CORREGIDO
+                return;
+            }
+            
+            $data['status'] = $newStatus;
         }
         
-        // Actualizar datos de encuestado si aplica
+        if (!empty($password)) {
+            $data['password'] = $this->userModel->hashPassword($password);
+        }
+        
         if ($user['role'] === 'encuestado') {
             $data['business_id'] = $this->input('business_id');
             $data['start_date'] = $this->input('start_date');
             $data['end_date'] = $this->input('end_date');
         }
 
-        if ($this->userModel->update($id, $data)) {
+        $updated = $this->userModel->update($id, $data);
+
+        if ($updated) {
             $_SESSION['flash'] = [
                 'type' => 'success',
-                'message' => 'Usuario actualizado exitosamente'
+                'message' => 'Usuario actualizado exitosamente.'
             ];
-            $this->redirect('admin/users');
         } else {
             $_SESSION['flash'] = [
-                'type' => 'error',
-                'message' => 'Error al actualizar el usuario'
+                'type' => 'info',
+                'message' => 'No se detectaron cambios para actualizar.'
             ];
-            $this->redirect('admin/users/edit?id=' . $id);
         }
+        
+        $this->redirect('/admin/users');
     }
     
     /**
