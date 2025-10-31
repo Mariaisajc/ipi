@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <tr>
                             <th>Usuario</th>
                             <th>Nombre</th>
-                            <th>Formularios</th>
+                            <th class="text-center">Formularios</th> <!-- MODIFICADO -->
                             <th>Rol</th>
                             <th>Empresa</th>
                             <th>Estado</th>
@@ -138,15 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <span class="text-muted">-</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <?php if ($user['role'] === 'encuestado'): ?>
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="bi bi-hourglass-split me-1"></i>
-                                        Pendiente
+                            <td class="text-center">
+                                <?php if ($user['assigned_forms_count'] > 0): ?>
+                                    <span class="badge bg-primary rounded-pill">
+                                        <?= $user['assigned_forms_count'] ?>
                                     </span>
-                                    <div>
-                                        <small class="text-muted">Módulo en desarrollo</small>
-                                    </div>
                                 <?php else: ?>
                                     <span class="text-muted">-</span>
                                 <?php endif; ?>
@@ -286,39 +282,45 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Modal de Confirmación de Eliminación -->
+<!-- Modal de Confirmación de Eliminación (MODIFICADO) -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Confirmar Eliminación
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
-                    <h5 class="mt-3 mb-2">¿Desea realmente eliminar por completo este usuario?</h5>
-                    <p class="text-muted mb-0">Esta acción no se puede deshacer</p>
+            <!-- FORMULARIO PARA ELIMINAR -->
+            <form id="deleteForm" action="<?= url('admin/users/delete') ?>" method="POST">
+                <?= (new CSRF())->field() ?>
+                <input type="hidden" name="id" id="deleteUserId">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="bg-light p-3 rounded text-center">
-                    <strong>Usuario:</strong> 
-                    <span id="deleteUserLogin" class="text-danger fw-bold"></span>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3 mb-2">¿Desea realmente eliminar por completo este usuario?</h5>
+                        <p class="text-muted mb-0">Esta acción no se puede deshacer</p>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded text-center">
+                        <strong>Usuario:</strong> 
+                        <span id="deleteUserLogin" class="text-danger fw-bold"></span>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>
-                    Cancelar
-                </button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteUser()">
-                    <i class="bi bi-trash me-1"></i>
-                    Sí, Eliminar
-                </button>
-            </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-1"></i>
+                        Sí, Eliminar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -327,62 +329,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // Variable para almacenar el ID del usuario a eliminar
 let userToDelete = null;
 
-// Abrir modal de confirmación
+// Abrir modal de confirmación (MODIFICADO)
 function openDeleteModal(id, login) {
-    userToDelete = id;
+    document.getElementById('deleteUserId').value = id;
     document.getElementById('deleteUserLogin').textContent = login;
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
 }
 
-// Función de eliminación
-function deleteUser() {
-    if (!userToDelete) return;
-    
-    // Deshabilitar botón para evitar múltiples clicks
+// Escuchar el envío del formulario de eliminación (NUEVO)
+document.getElementById('deleteForm').addEventListener('submit', function() {
     const btn = document.getElementById('confirmDeleteBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
-    
-    fetch('<?= url('admin/users/destroy') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-        },
-        body: 'id=' + userToDelete
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Cerrar modal
-            bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
-            
-            // Mostrar mensaje de éxito
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show';
-            alert.innerHTML = `
-                ${data.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').firstChild);
-            
-            // Recargar página después de 1 segundo
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            // Mostrar error
-            alert('Error: ' + data.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-trash me-1"></i>Eliminar Usuario';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al eliminar el usuario');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-trash me-1"></i>Eliminar Usuario';
-    });
-}
+});
 </script>
 
 <style>

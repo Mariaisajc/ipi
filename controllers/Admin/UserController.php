@@ -184,7 +184,7 @@ class UserController extends Controller {
             'login' => $login,
             'name' => $name,
             'email' => $email,
-            'password' => $this->userModel->hashPassword($password),
+            'password' => password_hash($password, PASSWORD_DEFAULT), // <-- CORREGIDO
             'role' => $role,
             'business_id' => $role === 'encuestado' ? $business_id : null,
             'start_date' => $role === 'encuestado' ? $start_date : null,
@@ -239,10 +239,14 @@ class UserController extends Controller {
         // Verificar si puede ser eliminado
         $canDeleteData = $this->userModel->canDelete($id);
         
+        // NUEVO: Obtener formularios asignados
+        $assignedForms = $this->userModel->getAssignedForms($id);
+        
         $this->view('admin/users/view', [
             'title' => 'Detalle de Usuario',
             'user' => $user,
-            'canDeleteData' => $canDeleteData
+            'canDeleteData' => $canDeleteData,
+            'assignedForms' => $assignedForms // <-- Pasar datos a la vista
         ], 'admin');
     }
     
@@ -356,19 +360,12 @@ class UserController extends Controller {
             $data['status'] = $newStatus;
         }
         
+        // Solo actualizar contraseña si se proporcionó una nueva
         if (!empty($password)) {
-            $data['password'] = $this->userModel->hashPassword($password);
+            $data['password'] = password_hash($password, PASSWORD_DEFAULT); // <-- CORREGIDO
         }
         
-        if ($user['role'] === 'encuestado') {
-            $data['business_id'] = $this->input('business_id');
-            $data['start_date'] = $this->input('start_date');
-            $data['end_date'] = $this->input('end_date');
-        }
-
-        $updated = $this->userModel->update($id, $data);
-
-        if ($updated) {
+        if ($this->userModel->update($id, $data)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'message' => 'Usuario actualizado exitosamente.'
@@ -384,47 +381,52 @@ class UserController extends Controller {
     }
     
     /**
-     * Eliminar un usuario (AJAX)
+     * Eliminar un usuario (MODIFICADO para leer desde POST)
      */
     public function delete() {
-        header('Content-Type: application/json');
-        
-        if (!$this->isPost() || !$this->isAjax()) {
-            echo json_encode(['success' => false, 'message' => 'Petición no válida']);
+        if (!$this->isPost()) {
+            $this->redirect('admin/users');
             return;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $id = $input['id'] ?? null;
+        $this->validateCSRF();
+        $id = $this->input('id');
 
         if (!$id) {
-            echo json_encode(['success' => false, 'message' => 'ID de usuario no proporcionado']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'ID de usuario no proporcionado.'];
+            $this->redirect('admin/users');
             return;
         }
 
-        // Regla #5: Proteger al super admin
+        // Regla: Proteger al super admin
         if ($id == 1) {
-            echo json_encode(['success' => false, 'message' => 'El administrador principal no puede ser eliminado.']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'El administrador principal no puede ser eliminado.'];
+            $this->redirect('admin/users');
             return;
         }
         
-        // Verificar si el usuario actual intenta eliminarse a sí mismo
+        // Regla: Un admin no puede eliminarse a sí mismo
         if ($id == $this->auth->user()['id']) {
-            echo json_encode(['success' => false, 'message' => 'No puedes eliminar tu propia cuenta.']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'No puedes eliminar tu propia cuenta.'];
+            $this->redirect('admin/users');
             return;
         }
 
+        // Usar el método canDelete del modelo
         $deleteCheck = $this->userModel->canDelete($id);
         if (!$deleteCheck['can_delete']) {
-            echo json_encode(['success' => false, 'message' => $deleteCheck['reason']]);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $deleteCheck['reason']];
+            $this->redirect('admin/users');
             return;
         }
 
         if ($this->userModel->delete($id)) {
-            echo json_encode(['success' => true, 'message' => 'Usuario eliminado exitosamente.']);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Usuario eliminado exitosamente.'];
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al eliminar el usuario de la base de datos.']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Error al eliminar el usuario de la base de datos.'];
         }
+        
+        $this->redirect('admin/users');
     }
     
     /**

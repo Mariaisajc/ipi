@@ -15,7 +15,8 @@ class User extends Model {
     public function getAll($limit = null, $offset = 0) {
         $sql = "SELECT u.*, 
                 b.name as business_name,
-                creator.name as created_by_name
+                creator.name as created_by_name,
+                (SELECT COUNT(*) FROM user_forms WHERE user_id = u.id) as assigned_forms_count
                 FROM {$this->table} u
                 LEFT JOIN businesses b ON u.business_id = b.id
                 LEFT JOIN users creator ON u.created_by = creator.id
@@ -185,7 +186,10 @@ class User extends Model {
      * Eliminar usuario
      */
     public function delete($id) {
-        return parent::delete($id);
+        // CORREGIDO: Implementar la consulta SQL de borrado directamente
+        $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?";
+        $stmt = $this->query($sql, [$id]);
+        return $stmt->rowCount() > 0;
     }
     
     /**
@@ -220,7 +224,8 @@ class User extends Model {
     public function filter($filters) {
         $sql = "SELECT u.*, 
                 b.name as business_name,
-                creator.name as created_by_name
+                creator.name as created_by_name,
+                (SELECT COUNT(*) FROM user_forms WHERE user_id = u.id) as assigned_forms_count
                 FROM {$this->table} u
                 LEFT JOIN businesses b ON u.business_id = b.id
                 LEFT JOIN users creator ON u.created_by = creator.id
@@ -338,7 +343,14 @@ class User extends Model {
             return ['can_delete' => false, 'reason' => 'El usuario no se puede eliminar porque tiene respuestas asociadas.'];
         }
         
-        // Regla #4: Verificar si tiene formularios creados
+        // NUEVO: Regla #5: Verificar si tiene formularios asignados
+        $sqlAssigned = "SELECT COUNT(*) as total FROM user_forms WHERE user_id = ?";
+        $assigned = $this->query($sqlAssigned, [$id]);
+        if ($assigned[0]['total'] > 0) {
+            return ['can_delete' => false, 'reason' => 'El usuario no se puede eliminar porque tiene formularios asignados.'];
+        }
+
+        // Regla #6: Verificar si tiene formularios creados
         $sqlForms = "SELECT COUNT(*) as total FROM forms WHERE created_by = ?";
         $forms = $this->query($sqlForms, [$id]);
         if ($forms[0]['total'] > 0) {
@@ -403,7 +415,8 @@ class User extends Model {
      * Obtener todos los usuarios por rol, sin importar su estado
      */
     public function getAllUsersByRole($role) {
-        $sql = "SELECT id, name, email, status FROM users WHERE role = ? ORDER BY name ASC";
+        // MODIFICADO: Añadir login, start_date y end_date
+        $sql = "SELECT id, login, name, email, status, start_date, end_date FROM users WHERE role = ? ORDER BY name ASC";
         return $this->query($sql, [$role]);
     }
 
@@ -417,5 +430,17 @@ class User extends Model {
                 WHERE uf.form_id = ?
                 ORDER BY u.name ASC";
         return $this->query($sql, [$formId]);
+    }
+
+    /**
+     * NUEVO: Obtener los formularios asignados a un usuario específico
+     */
+    public function getAssignedForms($userId) {
+        $sql = "SELECT f.id, f.title, f.status 
+                FROM forms f
+                INNER JOIN user_forms uf ON f.id = uf.form_id
+                WHERE uf.user_id = ?
+                ORDER BY f.title ASC";
+        return $this->query($sql, [$userId]);
     }
 }

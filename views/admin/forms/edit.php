@@ -60,15 +60,18 @@ if ($flashData):
                 <p class="text-muted text-center">No hay usuarios con el rol "Encuestado" para asignar.</p>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead class="table-light">
+                            <!-- MODIFICADO: Nuevas columnas -->
                             <tr>
                                 <th style="width: 5%;">
                                     <input type="checkbox" class="form-check-input" id="selectAll">
                                 </th>
-                                <th style="width: 45%;">Nombre</th>
-                                <th style="width: 10%;" class="text-center">Estado</th>
-                                <th style="width: 40%;">Correo Electrónico</th>
+                                <th style="width: 20%;">Usuario (Login)</th>
+                                <th style="width: 30%;">Nombre</th>
+                                <th style="width: 15%;" class="text-center">Estado</th>
+                                <th style="width: 15%;" class="text-center">Fecha Inicio</th>
+                                <th style="width: 15%;" class="text-center">Fecha Fin</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -81,14 +84,20 @@ if ($flashData):
                                                value="<?= $user['id'] ?>"
                                                <?= in_array($user['id'], $assignedUserIds) ? 'checked' : '' ?>>
                                     </td>
+                                    <!-- MODIFICADO: Nuevos campos -->
+                                    <td class="fw-semibold"><?= e($user['login']) ?></td>
                                     <td><?= e($user['name']) ?></td>
-                                    <!-- NUEVO: Mostrar estado del usuario -->
                                     <td class="text-center">
                                         <span class="badge bg-<?= $user['status'] === 'active' ? 'success' : 'secondary' ?>">
                                             <?= ucfirst($user['status']) ?>
                                         </span>
                                     </td>
-                                    <td><?= e($user['email']) ?></td>
+                                    <td class="text-center">
+                                        <?= $user['start_date'] ? date('d/m/Y', strtotime($user['start_date'])) : '<span class="text-muted">-</span>' ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?= $user['end_date'] ? date('d/m/Y', strtotime($user['end_date'])) : '<span class="text-muted">-</span>' ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

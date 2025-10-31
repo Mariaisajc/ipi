@@ -221,6 +221,37 @@ if ($flashData):
             </div>
         </div>
         
+        <!-- NUEVO: Formularios Asignados -->
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Formularios Asignados</h5>
+                <span class="badge bg-primary rounded-pill"><?= count($assignedForms) ?></span>
+            </div>
+            <div class="card-body">
+                <?php if (empty($assignedForms)): ?>
+                    <p class="text-muted text-center mb-0">Este usuario no tiene formularios asignados.</p>
+                <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($assignedForms as $form): ?>
+                            <a href="<?= url('admin/forms/show?id=' . $form['id']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-file-text me-2"></i>
+                                    <?= e($form['title']) ?>
+                                </span>
+                                <?php
+                                $statusColors = ['draft' => 'secondary', 'active' => 'success', 'closed' => 'danger'];
+                                $statusNames = ['draft' => 'Borrador', 'active' => 'Activo', 'closed' => 'Cerrado'];
+                                ?>
+                                <span class="badge bg-<?= $statusColors[$form['status']] ?? 'secondary' ?>">
+                                    <?= $statusNames[$form['status']] ?? ucfirst($form['status']) ?>
+                                </span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
     </div>
     
     <!-- Sidebar -->
@@ -331,13 +362,17 @@ function deleteUser() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
     
-    fetch('<?= url('admin/users/destroy') ?>', {
+    fetch('<?= url('admin/users/delete') ?>', { // CORREGIDO: Ruta a 'delete'
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            'Content-Type': 'application/json', // CORREGIDO: Tipo de contenido
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: 'id=<?= $user['id'] ?>'
+        body: JSON.stringify({ // CORREGIDO: Enviar como JSON
+            id: <?= $user['id'] ?>,
+            csrf_token: document.querySelector('meta[name="csrf-token"]')?.content || ''
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -363,40 +398,45 @@ function deleteUser() {
 }
 </script>
 
-<!-- Modal de Confirmación de Eliminación -->
+<!-- Modal de Confirmación de Eliminación (MODIFICADO) -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Confirmar Eliminación
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Información del usuario -->
-                <div class="text-center mb-4">
-                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
-                    <h5 class="mt-3 mb-2">¿Desea realmente eliminar por completo este usuario?</h5>
-                    <p class="text-muted mb-0">Esta acción no se puede deshacer</p>
+            <!-- FORMULARIO PARA ELIMINAR -->
+            <form id="deleteForm" action="<?= url('admin/users/delete') ?>" method="POST">
+                <?= (new CSRF())->field() ?>
+                <input type="hidden" name="id" value="<?= $user['id'] ?>">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
-                <div class="bg-light p-3 rounded text-center">
-                    <strong>Usuario:</strong> 
-                    <span class="text-danger fw-bold"><?= e($user['login']) ?></span>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3 mb-2">¿Desea realmente eliminar por completo este usuario?</h5>
+                        <p class="text-muted mb-0">Esta acción no se puede deshacer</p>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded text-center">
+                        <strong>Usuario:</strong> 
+                        <span class="text-danger fw-bold"><?= e($user['login']) ?></span>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>
-                    Cancelar
-                </button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteUser()">
-                    <i class="bi bi-trash me-1"></i>
-                    Sí, Eliminar
-                </button>
-            </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-1"></i>
+                        Sí, Eliminar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
